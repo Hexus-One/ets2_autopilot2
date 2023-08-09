@@ -19,9 +19,9 @@ This project is WIP. At the moment there is no code :)
 2. Install Python 3.11.4 - [releases available here.](https://www.python.org/downloads/release/python-3114/)
    - Optionally setup a virtual environment with `venv`
 3. Install the required packages with:
-
-```pip install -r requirements.txt```
-
+```
+pip install -r requirements.txt
+```
 4. Run `main.py` to start the program. (TBD)
 
 ## Contributing
