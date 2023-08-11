@@ -4,7 +4,7 @@ import time
 import cv2
 import mss
 import numpy as np
-from win32gui import FindWindow, GetWindowRect
+from win32gui import FindWindow, GetWindowRect # ignore squiggly, we have pywin32
 
 if __name__ == '__main__':
     print("Hello, world!")
@@ -52,10 +52,12 @@ if __name__ == '__main__':
             comb_mask_inv = cv2.bitwise_not(comb_mask)
             im_tmp3 = cv2.bitwise_and(im_src, im_src, mask=comb_mask_inv)
             im_out = cv2.warpPerspective(im_tmp3, h, (1921, 1120), flags=cv2.INTER_NEAREST)
+            thinned = cv2.ximgproc.thinning(comb_mask)
 
             cv2.imshow('Source Image', im_src)
             cv2.imshow('Mask', comb_mask)
-            cv2.imshow("Warped Source Image", im_out)
+            cv2.imshow('Thinned', thinned)
+            cv2.imshow('Warped Source Image', im_out)
 
             print(f'FPS: {1/(time.time()-last_time)}')
             last_time = time.time()
