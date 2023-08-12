@@ -1,3 +1,6 @@
+# main.py
+# entry point for the program
+
 import ctypes
 import time
 
@@ -5,7 +8,6 @@ import cv2
 import mss
 import numpy as np
 from sys import platform
-# from skimage.morphology import medial_axis
 from win32gui import FindWindow, GetWindowRect # ignore squiggly, we have pywin32
 
 import ets2_autopilot.imgproc as imgproc

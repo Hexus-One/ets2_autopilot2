@@ -5,12 +5,17 @@ A program to automate driving in SCS Software's Euro Truck Simulator 2.
 This mainly relies on the HUD GPS with an active route to determine the road ahead, to save effort and computation that's normally required to infer the lanes from the main view. This also allows the program to negogiate more complex situations like turns and intersections, and ideally navigate from end-to-end with no interventions.
 
 ## Development Status
-This project is WIP. At the moment there is no code :)
+- [x] obtain a mask/outline of the route from the GPS
+- [ ] infer centreline of the route
+- [ ] obtain telemetry data from the game via SCS Telemetry
+- [ ] calculate steering angle required
+  - [ ] calculate max speed through route ahead
+- [ ] send input (steering/throttle/brake) to the game
 
 ## Requirements
 
-* OS requirements TBD
-* Euro Truck Simulator 2
+* Windows 10 (untested on Win11)
+* Euro Truck Simulator 2 (in a 1920x1080 window and with a left-hand drive truck)
 * Python 3.11.4
 
 ## Setup/Installation
@@ -22,7 +27,7 @@ This project is WIP. At the moment there is no code :)
 ```
 pip install -r requirements.txt
 ```
-4. Run `main.py` to start the program. (TBD)
+4. Run `main.py` to start the program.
 
 ## Contributing
 TBD

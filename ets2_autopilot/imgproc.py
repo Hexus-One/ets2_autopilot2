@@ -2,6 +2,7 @@
 # contains constants and functions for inferring centreline from an image
 import cv2
 import numpy as np
+# from skimage.morphology import medial_axis
 
 # hardcoded colours for drawing
 RED = (0, 0, 255)
