@@ -4,6 +4,7 @@ import time
 import cv2
 import mss
 import numpy as np
+# from skimage.morphology import medial_axis
 from win32gui import FindWindow, GetWindowRect # ignore squiggly, we have pywin32
 
 if __name__ == '__main__':
@@ -12,6 +13,12 @@ if __name__ == '__main__':
     # https://stackoverflow.com/questions/44398075/can-dpi-scaling-be-enabled-disabled-programmatically-on-a-per-session-basis
     # This works for Win10/8 but not 7/Vista
     errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
+
+    # hardcoded colours for drawing
+    RED = (0, 0, 255)
+    BLUE = (255, 0, 0)
+    CYAN = (255, 255, 0)
+    WHITE_1CH = (255)
 
     # hardcoded GPS colours, remember its BGRA not RGBA
     GREEN_MIN = (6, 229, 17, 255)
@@ -42,8 +49,11 @@ if __name__ == '__main__':
         while True:
             # grab window position
             # assuming you're using Win10 + ETS2 in 1920x1080 window
-            if window_handle is None:
-                break
+            if window_handle == 0:
+                print('ETS2 not found, waiting...')
+                time.sleep(1)
+                window_handle = FindWindow(None, "Euro Truck Simulator 2")
+                continue
             window_rect = GetWindowRect(window_handle)
             ets2_window = {"top": window_rect[1]+CROP_Y,
                         "left": window_rect[0]+10+CROP_X, # no clue why
@@ -76,9 +86,9 @@ if __name__ == '__main__':
             for contour in contours:
                 epsilon = 0.001 * cv2.arcLength(contour, True)
                 approx.append(cv2.approxPolyDP(contour, epsilon, True))
-            """
+            # """
             # draw on og HUD
-            cv2.drawContours(comb_mask, contours, -1, (0, 0, 255), 1)
+            cv2.drawContours(comb_mask, contours, -1, RED, 1)
 
             # warp contours for transformed perspective
             warped_contours = []
@@ -89,11 +99,16 @@ if __name__ == '__main__':
                 contourf = contour.astype(np.float32)
                 warped_cont = cv2.perspectiveTransform(contourf, HOMOGRAPHY)
                 warped_contours.append(warped_cont.astype(int))
-            cv2.drawContours(im_out, warped_contours, -1, (255, 255, 0), 1)
+            cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
+            for contour in warped_contours:
+                for point in contour:
+                    cv2.drawMarker(im_out, point[0], BLUE, cv2.MARKER_TILTED_CROSS, 5)
 
+            # thinning not working so we're abandoning it
+            """
             # perform thinning -> convert to polyline on top-down contours
             topdown = np.zeros((WIN_HEIGHT, WIN_WIDTH), np.uint8)
-            cv2.drawContours(topdown, warped_contours, -1, (255), cv2.FILLED)
+            cv2.drawContours(topdown, warped_contours, -1, WHITE_1CH, cv2.FILLED)
             # performance optimisation: crop to bounding box in preparation for thinning
             cont_top, cont_left = WIN_HEIGHT, WIN_WIDTH
             cont_bottom, cont_right = 0, 0
@@ -106,9 +121,11 @@ if __name__ == '__main__':
                 cont_right = min(max(cont_right, x+w), WIN_WIDTH)
             topdown = topdown[cont_top:cont_bottom, cont_left:cont_right]
             if len(warped_contours) > 0:
-                # image thinning with zhang-suen
+                # image thinning
                 # this bit is very laggy - varies between 3-15fps
                 topdown = cv2.ximgproc.thinning(topdown)
+                # topdown = medial_axis(topdown, rng=0)
+                # topdown = 255 * topdown.astype(np.uint8)
                 topdown = cv2.copyMakeBorder(topdown,
                                             cont_top,
                                             WIN_HEIGHT - cont_bottom,
@@ -117,7 +134,7 @@ if __name__ == '__main__':
                                             cv2.BORDER_CONSTANT, (0))
                 topdown = cv2.cvtColor(topdown, cv2.COLOR_GRAY2BGRA)
                 im_out = cv2.bitwise_or(im_out, topdown)
-
+            # """
             # TODO: convert thinned mask to polyline
             # TODO: get telemetry data from game
             # TODO: determine ideal steering angle from polyline + telemetry
