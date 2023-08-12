@@ -51,12 +51,41 @@ if __name__ == '__main__':
             comb_mask = cv2.morphologyEx(comb_mask, cv2.MORPH_CLOSE, KERNEL)
             comb_mask_inv = cv2.bitwise_not(comb_mask)
             im_tmp3 = cv2.bitwise_and(im_src, im_src, mask=comb_mask_inv)
-            im_out = cv2.warpPerspective(im_tmp3, h, (1921, 1120), flags=cv2.INTER_NEAREST)
-            thinned = cv2.ximgproc.thinning(comb_mask)
+            im_out = cv2.warpPerspective(im_src, h, (1921, 1120), flags=cv2.INTER_NEAREST)
+            # thinned = cv2.ximgproc.thinning(comb_mask)
+            # thin_warp = cv2.warpPerspective(thinned, h, (1921, 1120), flags=cv2.INTER_NEAREST)
+            # thin_warp = cv2.cvtColor(thin_warp, cv2.COLOR_GRAY2BGRA)
+            # im_out = cv2.bitwise_or(im_out, thin_warp)
+
+            # get contours of path
+            contours, heirarchy = cv2.findContours(comb_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS)
+            comb_mask = cv2.cvtColor(comb_mask, cv2.COLOR_GRAY2BGRA)
+
+            # approximation not needed, I can't seem to tune it
+            # to a nice value
+            """
+            approx = []
+            for contour in contours:
+                epsilon = 0.001 * cv2.arcLength(contour, True)
+                approx.append(cv2.approxPolyDP(contour, epsilon, True))
+            """
+            # draw on og HUD
+            cv2.drawContours(comb_mask, contours, -1, (0, 0, 255), 1)
+
+            # warp contours for transformed perspective
+            warped_contours = []
+            for contour in contours:
+                # discard degenerate contours that probably don't represent road
+                if contour.size < 5:
+                    continue
+                contourf = contour.astype(np.float32)
+                warped_cont = cv2.perspectiveTransform(contourf, h)
+                warped_contours.append(warped_cont.astype(int))
+            cv2.drawContours(im_out, warped_contours, -1, (255, 255, 255), 1)
 
             cv2.imshow('Source Image', im_src)
             cv2.imshow('Mask', comb_mask)
-            cv2.imshow('Thinned', thinned)
+            # cv2.imshow('Thinned', thinned)
             cv2.imshow('Warped Source Image', im_out)
 
             print(f'FPS: {1/(time.time()-last_time)}')
