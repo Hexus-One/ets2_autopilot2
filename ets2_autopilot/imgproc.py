@@ -118,3 +118,4 @@ def infer_polyline(im_src):
     cv2.imshow('Mask', comb_mask)
     # cv2.imshow('Thinned', thinned)
     cv2.imshow('Warped Source Image', im_out)
+    return warped_contours, im_out

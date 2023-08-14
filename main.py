@@ -43,7 +43,7 @@ if __name__ == '__main__':
             # limiting the loop to 60fps or 30fps (if it misses a frame)
             im_src = np.array(sct.grab(ets2_window))
             # get centreline from image
-            centreline = infer_polyline(im_src)
+            centreline, _ = infer_polyline(im_src)
 
             # TODO: convert thinned mask to polyline
             # TODO: get telemetry data from game
