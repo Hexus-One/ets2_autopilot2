@@ -21,7 +21,8 @@ KERNEL = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
 
 # window size of 1920x1080 ETS2 windowed
 # TODO: adapt to fullscreen or diff window sizes
-# TODO: also adapt if truck is right-hand drive (in which case GPS is in the left corner)
+# TODO: also adapt if truck is right-hand drive
+#       (in which case GPS is in the left corner)
 WIN_WIDTH = 1921
 WIN_HEIGHT = 1120
 # offset to GPS window (in the bottom right)
@@ -45,14 +46,16 @@ def infer_polyline(im_src):
     comb_mask = cv2.morphologyEx(comb_mask, cv2.MORPH_CLOSE, KERNEL)
     comb_mask_inv = cv2.bitwise_not(comb_mask)
     im_tmp3 = cv2.bitwise_and(im_src, im_src, mask=comb_mask_inv)
-    im_out = cv2.warpPerspective(im_src, HOMOGRAPHY, (WIN_WIDTH, WIN_HEIGHT), flags=cv2.INTER_NEAREST)
+    im_out = cv2.warpPerspective(
+        im_src, HOMOGRAPHY, (WIN_WIDTH, WIN_HEIGHT), flags=cv2.INTER_NEAREST)
     # thinned = cv2.ximgproc.thinning(comb_mask)
     # thin_warp = cv2.warpPerspective(thinned, h, (WIN_WIDTH, WIN_HEIGHT), flags=cv2.INTER_NEAREST)
     # thin_warp = cv2.cvtColor(thin_warp, cv2.COLOR_GRAY2BGRA)
     # im_out = cv2.bitwise_or(im_out, thin_warp)
 
     # get contours of path
-    contours, heirarchy = cv2.findContours(comb_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS)
+    contours, heirarchy = cv2.findContours(
+        comb_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS)
     comb_mask = cv2.cvtColor(comb_mask, cv2.COLOR_GRAY2BGRA)
 
     # approximation not needed, I can't seem to tune it
@@ -111,6 +114,7 @@ def infer_polyline(im_src):
         topdown = cv2.cvtColor(topdown, cv2.COLOR_GRAY2BGRA)
         im_out = cv2.bitwise_or(im_out, topdown)
     # """
+    cv2.imshow('Source Image', im_src)
     cv2.imshow('Mask', comb_mask)
     # cv2.imshow('Thinned', thinned)
     cv2.imshow('Warped Source Image', im_out)

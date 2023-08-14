@@ -2,15 +2,16 @@
 # entry point for the program
 
 import ctypes
+from sys import platform
 import time
 
 import cv2
 import mss
 import numpy as np
-from sys import platform
 from win32gui import FindWindow, GetWindowRect # ignore squiggly, we have pywin32
 
-import ets2_autopilot.imgproc as imgproc
+from ets2_autopilot.imgproc import \
+    infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
 
 if __name__ == '__main__':
     print('Hello, world!')
@@ -20,10 +21,6 @@ if __name__ == '__main__':
     if platform == 'win32':
         errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
-    WIN_WIDTH = imgproc.WIN_WIDTH
-    WIN_HEIGHT = imgproc.WIN_HEIGHT
-    CROP_X = imgproc.CROP_X
-    CROP_Y = imgproc.CROP_Y
     window_handle = FindWindow(None, 'Euro Truck Simulator 2')
 
     with mss.mss() as sct:
@@ -42,16 +39,16 @@ if __name__ == '__main__':
                         'width': WIN_WIDTH - CROP_X,
                         'height': WIN_HEIGHT - CROP_Y
                         }
+            # sct.grab is synced to refresh rate,
+            # limiting the loop to 60fps or 30fps (if it misses a frame)
             im_src = np.array(sct.grab(ets2_window))
             # get centreline from image
-            centreline = imgproc.infer_polyline(im_src)
+            centreline = infer_polyline(im_src)
 
             # TODO: convert thinned mask to polyline
             # TODO: get telemetry data from game
             # TODO: determine ideal steering angle from polyline + telemetry
             # TODO: send input to game
-
-            cv2.imshow('Source Image', im_src)
 
             print(f'FPS: {1/(time.time()-last_time)}')
             last_time = time.time()
