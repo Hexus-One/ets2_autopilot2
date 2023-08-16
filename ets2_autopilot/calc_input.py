@@ -19,8 +19,13 @@ def calculateSteeringError(centreline):
     return steering_error
 
 def calculateThrottleError(centreline, current_speed):
-    # Implementation for calculating throttle error goes here
-    pass
+    # Calculate the desired speed based on the centreline and current position
+    desired_speed = calculateDesiredSpeed(centreline, current_position)
+
+    # The throttle error is the difference between the desired speed and the current speed
+    throttle_error = desired_speed - current_speed
+
+    return throttle_error
 
 def calc_input(telemetry, centreline):
     # PID gains
