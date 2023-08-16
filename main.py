@@ -11,6 +11,9 @@ import numpy as np
 from win32gui import FindWindow, GetWindowRect  # ignore squiggly, we have pywin32
 
 from ets2_autopilot.imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
+from ets2_autopilot.telemetry import get_telemetry
+from ets2_autopilot.calc_input import calc_input
+from ets2_autopilot.send_input import send_input
 
 if __name__ == "__main__":
     print("Hello, world!")
@@ -42,13 +45,12 @@ if __name__ == "__main__":
             # sct.grab is synced to refresh rate,
             # limiting the loop to 60fps or 30fps (if it misses a frame)
             im_src = np.array(sct.grab(ets2_window))
-            # get centreline from image
-            centreline, _ = infer_polyline(im_src)
 
-            # TODO: convert thinned mask to polyline
-            # TODO: get telemetry data from game
-            # TODO: determine ideal steering angle from polyline + telemetry
-            # TODO: send input to game
+            # magic happens here
+            centreline, _ = infer_polyline(im_src)
+            telemetry = get_telemetry()
+            steering, throttle = calc_input(telemetry, centreline)
+            send_input(steering, throttle)
 
             print(f"FPS: {1/(time.time()-last_time)}")
             last_time = time.time()
