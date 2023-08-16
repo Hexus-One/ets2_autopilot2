@@ -9,9 +9,14 @@ def calculate_heading():
     # Implementation for calculating heading goes here
     pass
 
-def calculateSteeringError(centreline, current_position):
-    # Implementation for calculating steering error goes here
-    pass
+def calculateSteeringError(centreline):
+    # Get the x-coordinate of the first point in the centreline
+    steering_error = centreline[0][0]
+
+    # You can scale or modify this error based on your specific requirements
+    # E.g., you might want to normalize it by the length of the track or apply a specific scaling factor
+
+    return steering_error
 
 def calculateThrottleError(centreline, current_speed):
     # Implementation for calculating throttle error goes here
