@@ -11,6 +11,7 @@ BLUE = (255, 0, 0)
 CYAN = (255, 255, 0)
 YELLOW = (0, 255, 255)
 MAGENTA = (255, 0, 255)
+WHITE = (255, 255, 255)
 WHITE_1CH = 255
 
 # hardcoded GPS colours, remember its BGRA not RGBA
@@ -102,6 +103,13 @@ def infer_polyline(im_src):
         cv2.line(im_out, line[0], line[1], MAGENTA)
     for point in centreline:
         cv2.drawMarker(im_out, point.astype(int), BLUE, cv2.MARKER_TILTED_CROSS, 5)
+    # no clue why this is needed but yeah
+    # taken from https://www.geeksforgeeks.org/python-opencv-cv2-polylines-method/
+    centreline_np = np.array(centreline, np.int32)
+    centreline_np = centreline_np.reshape((-1, 1, 2))
+    cv2.polylines(im_out, [centreline_np], False, YELLOW)
+
+    # TODO: need to translate/scale centreline to be about origin
 
     cv2.imshow("Source Image", im_src)
     cv2.imshow("Mask", comb_mask)
@@ -158,26 +166,50 @@ def contours_to_centreline(contours):
     # starting points found, we can continue
     # otherwise we're probably outside the line
 
-    start_centre = (start_contour[left_idx][0] + start_contour[right_idx][0]) / 2
-    centreline.append(start_centre)
-    diagonals.append((start_contour[left_idx][0], start_contour[right_idx][0]))
+    # 3/4/5 do the walking thing
     # as far as I know, contours go clockwise (at least the top-level
     # ones do) so we walk forwards for left, and backwards for right
+    #   turns out its the opposite?? no clue why
+    curr_L, curr_R = left_idx, right_idx
     while True:
-        print("Pain")
-        curr_L, curr_R = left_idx, right_idx
+        centre = (start_contour[curr_L][0] + start_contour[curr_R][0]) / 2
+        centreline.append(centre)
+        diagonals.append((start_contour[curr_L][0], start_contour[curr_R][0]))
         # two candidates for triangles
-        cand_L, cand_R = curr_L + 1, curr_R - 1
-        # compare the two triangles
-        break
+        cand_L = (curr_L - 1) % len(start_contour)
+        cand_R = (curr_R + 1) % len(start_contour)
+        # I guess we stop if we've looped around the contour?
+        if cand_R == curr_L or cand_L == curr_R:
+            break
+        # compare the two triangles and add the "better" diagonal (metric TBD)
+        if compare_triangles(curr_L, curr_R, cand_L, cand_R, start_contour):
+            # left diagonal better
+            curr_L = cand_L
+        else:
+            # right is better
+            curr_R = cand_R
 
     return centreline, diagonals
 
 
-# aspect ratio of a triangle, i.e ratio of longest:shortest side
+# compares abc to abd using triangle_metric, returns TRUE if abc is better than abd
+def compare_triangles(idx_a, idx_b, idx_c, idx_d, contour):
+    abc = triangle_metric(contour[idx_a], contour[idx_b], contour[idx_c])
+    abd = triangle_metric(contour[idx_a], contour[idx_b], contour[idx_d])
+    return abc >= abd
+
+
+# triangle metric, higher is better
+def triangle_metric(a, b, c):
+    # using aspect ratio for now, maybe equiangular skewness is better?
+    # reciprocal so we have 0..1 rather than 1..inf
+    return aspect_ratio(a, b, c)
+
+
+# reciprocal of aspect ratio of a triangle, i.e ratio of shortest:longest side
 # a, b, c -> three points
 def aspect_ratio(a, b, c):
     ab = cv2.norm(a - b)
     bc = cv2.norm(b - c)
     ac = cv2.norm(a - c)
-    return max(ab, bc, ac) / min(ab, bc, ac)
+    return min(ab, bc, ac) / max(ab, bc, ac)
