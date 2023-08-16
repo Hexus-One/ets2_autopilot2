@@ -74,3 +74,35 @@ def calc_input(telemetry, centreline):
     prev_timestamp_throttle = telemetry["timestamp"]
 
     return steering, throttle
+
+def is_ninety_degree_turn(centreline, severe_threshold=45, straight_threshold=15):
+    angles = []
+
+    # Calculate the angles between consecutive segments
+    for i in range(1, len(centreline) - 1):
+        x1, y1 = centreline[i - 1]
+        x2, y2 = centreline[i]
+        x3, y3 = centreline[i + 1]
+
+        vec1 = (x2 - x1, y2 - y1)
+        vec2 = (x3 - x2, y3 - y2)
+
+        mag1 = math.sqrt(vec1[0]**2 + vec1[1]**2)
+        mag2 = math.sqrt(vec2[0]**2 + vec2[1]**2)
+        
+        dot_product = vec1[0] * vec2[0] + vec1[1] * vec2[1]
+
+        angle = math.degrees(math.acos(dot_product / (mag1 * mag2)))
+
+        angles.append(angle)
+
+    # Check for a severe angle variation and relatively straight paths before and after
+    for i in range(1, len(angles) - 1):
+        if angles[i] > severe_threshold:
+            before_severe = all(angle < straight_threshold for angle in angles[:i])
+            after_severe = all(angle < straight_threshold for angle in angles[i+1:])
+
+            if before_severe and after_severe:
+                return True
+
+    return False
