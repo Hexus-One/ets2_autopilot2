@@ -116,6 +116,9 @@ def infer_polyline(im_src):
     # 2. get left/right contour points to start
     # might need to change this algo a bit, for some edge cases
     # reminder: coordinate format is (x,y) -> [0,1]
+    centreline = []  # list of points on centre
+    diagonals = []  # list of pairs of points of diagonals (for debug)
+
     if start_contour is not None:
         left_min = right_min = WIN_HEIGHT
         left_idx = right_idx = -1
@@ -141,9 +144,24 @@ def infer_polyline(im_src):
             cv2.drawMarker(
                 im_out, start_contour[right_idx][0], YELLOW, cv2.MARKER_STAR, 5
             )
+            start_centre = (
+                start_contour[left_idx][0] + start_contour[right_idx][0]
+            ) / 2
+            centreline.append(start_centre)
+            diagonals.append((start_contour[left_idx][0], start_contour[right_idx][0]))
+            cv2.drawMarker(
+                im_out, centreline[0].astype(int), BLUE, cv2.MARKER_TILTED_CROSS, 5
+            )
+            # as far as I know, contours go clockwise (at least the top-level
+            # ones do) so we walk forwards for left, and backwards for right
+            while True:
+                # oh god this nesting
+                # TODO: refactor to avoid nesting
+                print("Pain")
+                break
 
     cv2.imshow("Source Image", im_src)
     cv2.imshow("Mask", comb_mask)
     # cv2.imshow('Thinned', thinned)
     cv2.imshow("Warped Source Image", im_out)
-    return warped_contours, im_out
+    return centreline, im_out
