@@ -9,16 +9,17 @@ import cv2
 
 from imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
 
-FOLDER = r'.\tests\data'
-OUTPUT = r'.\tests\output'
+FOLDER = r".\tests\data"
+OUTPUT = r".\tests\output"
+
 
 def test_imgproc():
-    if platform == 'win32':
+    if platform == "win32":
         errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
     for filename in os.listdir(FOLDER):
         fullpath = os.path.join(FOLDER, filename)
-        print(f'Opening {fullpath}')
+        print(f"Opening {fullpath}")
         img = cv2.imread(fullpath)
         if img is None:
             continue
