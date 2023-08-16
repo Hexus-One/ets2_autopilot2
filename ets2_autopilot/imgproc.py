@@ -63,7 +63,7 @@ def infer_polyline(im_src):
     # thin_warp = cv2.warpPerspective(thinned, h, (WIN_WIDTH, WIN_HEIGHT), flags=cv2.INTER_NEAREST)
     # thin_warp = cv2.cvtColor(thin_warp, cv2.COLOR_GRAY2BGRA)
     # im_out = cv2.bitwise_or(im_out, thin_warp)
-
+    # comb_mask = cv2.GaussianBlur(comb_mask, (5, 5), 0)
     # get contours of path
     contours, heirarchy = cv2.findContours(
         comb_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS
@@ -195,15 +195,18 @@ def contours_to_centreline(contours):
 # compares abc to abd using triangle_metric, returns TRUE if abc is better than abd
 def compare_triangles(idx_a, idx_b, idx_c, idx_d, contour):
     abc = triangle_metric(contour[idx_a], contour[idx_b], contour[idx_c])
-    abd = triangle_metric(contour[idx_a], contour[idx_b], contour[idx_d])
-    return abc >= abd
+    bad = triangle_metric(contour[idx_b], contour[idx_a], contour[idx_d])
+    return abc >= bad
 
 
 # triangle metric, higher is better
 def triangle_metric(a, b, c):
-    # using aspect ratio for now, maybe equiangular skewness is better?
-    # reciprocal so we have 0..1 rather than 1..inf
-    return aspect_ratio(a, b, c)
+    # trying negative diagonal length (i.e. shorter diag is better)
+    return -diagonal_length(a, b, c)
+
+
+def diagonal_length(a, b, c):
+    return cv2.norm(b - c)
 
 
 # reciprocal of aspect ratio of a triangle, i.e ratio of shortest:longest side
