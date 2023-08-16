@@ -10,6 +10,7 @@ RED = (0, 0, 255)
 BLUE = (255, 0, 0)
 CYAN = (255, 255, 0)
 YELLOW = (0, 255, 255)
+MAGENTA = (255, 0, 255)
 WHITE_1CH = 255
 
 # hardcoded GPS colours, remember its BGRA not RGBA
@@ -95,8 +96,25 @@ def infer_polyline(im_src):
 
     # abandoned thinning via centreline
     # takes too long (like 2-20fps in pure python)
+    centreline, diagonals = contours_to_centreline(warped_contours)
 
-    # obtain via triangulating the contour instead:
+    for line in diagonals:
+        cv2.line(im_out, line[0], line[1], MAGENTA)
+    for point in centreline:
+        cv2.drawMarker(im_out, point.astype(int), BLUE, cv2.MARKER_TILTED_CROSS, 5)
+
+    cv2.imshow("Source Image", im_src)
+    cv2.imshow("Mask", comb_mask)
+    # cv2.imshow('Thinned', thinned)
+    cv2.imshow("Warped Source Image", im_out)
+    return centreline, im_out
+
+
+def contours_to_centreline(contours):
+    centreline = []  # list of points on centre
+    diagonals = []  # list of pairs of points of diagonals (for debug)
+
+    # obtain via triangulating the contour:
     # 1. find the contour the truck is inside
     # 2. get the contour points to the left/right that are furthest up
     #     BUT below the truck, i.e. >= TRUCK_CENTRE.y
@@ -108,7 +126,7 @@ def infer_polyline(im_src):
 
     # 1. find containing contour
     start_contour = None
-    for contour in warped_contours:
+    for contour in contours:
         if cv2.pointPolygonTest(contour, TRUCK_CENTRE, measureDist=False) == 1:
             start_contour = contour
             break
@@ -116,52 +134,50 @@ def infer_polyline(im_src):
     # 2. get left/right contour points to start
     # might need to change this algo a bit, for some edge cases
     # reminder: coordinate format is (x,y) -> [0,1]
-    centreline = []  # list of points on centre
-    diagonals = []  # list of pairs of points of diagonals (for debug)
 
-    if start_contour is not None:
-        left_min = right_min = WIN_HEIGHT
-        left_idx = right_idx = -1
-        for idx, [point] in enumerate(start_contour):
-            if point[1] < TRUCK_CENTRE[1]:  # only consider if below truck
-                continue
-            if point[0] < TRUCK_CENTRE[0]:  # to the left
-                if point[1] < left_min:
-                    left_min = point[1]
-                    left_idx = idx
-            else:  # to the right
-                if point[1] < right_min:
-                    right_min = point[1]
-                    right_idx = idx
-        if left_idx != -1 and right_idx != -1:
-            # starting points found, we can continue
-            # otherwise we're probably outside the line
+    if start_contour is None:
+        return centreline, diagonals
 
-            # for now just draw on the final image
-            cv2.drawMarker(
-                im_out, start_contour[left_idx][0], YELLOW, cv2.MARKER_STAR, 5
-            )
-            cv2.drawMarker(
-                im_out, start_contour[right_idx][0], YELLOW, cv2.MARKER_STAR, 5
-            )
-            start_centre = (
-                start_contour[left_idx][0] + start_contour[right_idx][0]
-            ) / 2
-            centreline.append(start_centre)
-            diagonals.append((start_contour[left_idx][0], start_contour[right_idx][0]))
-            cv2.drawMarker(
-                im_out, centreline[0].astype(int), BLUE, cv2.MARKER_TILTED_CROSS, 5
-            )
-            # as far as I know, contours go clockwise (at least the top-level
-            # ones do) so we walk forwards for left, and backwards for right
-            while True:
-                # oh god this nesting
-                # TODO: refactor to avoid nesting
-                print("Pain")
-                break
+    left_min = right_min = WIN_HEIGHT
+    left_idx = right_idx = -1
+    for idx, [point] in enumerate(start_contour):
+        if point[1] < TRUCK_CENTRE[1]:  # only consider if below truck
+            continue
+        if point[0] < TRUCK_CENTRE[0]:  # to the left
+            if point[1] < left_min:
+                left_min = point[1]
+                left_idx = idx
+        else:  # to the right
+            if point[1] < right_min:
+                right_min = point[1]
+                right_idx = idx
 
-    cv2.imshow("Source Image", im_src)
-    cv2.imshow("Mask", comb_mask)
-    # cv2.imshow('Thinned', thinned)
-    cv2.imshow("Warped Source Image", im_out)
-    return centreline, im_out
+    if left_idx == -1 or right_idx == -1:
+        return centreline, diagonals
+
+    # starting points found, we can continue
+    # otherwise we're probably outside the line
+
+    start_centre = (start_contour[left_idx][0] + start_contour[right_idx][0]) / 2
+    centreline.append(start_centre)
+    diagonals.append((start_contour[left_idx][0], start_contour[right_idx][0]))
+    # as far as I know, contours go clockwise (at least the top-level
+    # ones do) so we walk forwards for left, and backwards for right
+    while True:
+        print("Pain")
+        curr_L, curr_R = left_idx, right_idx
+        # two candidates for triangles
+        cand_L, cand_R = curr_L + 1, curr_R - 1
+        # compare the two triangles
+        break
+
+    return centreline, diagonals
+
+
+# aspect ratio of a triangle, i.e ratio of longest:shortest side
+# a, b, c -> three points
+def aspect_ratio(a, b, c):
+    ab = cv2.norm(a - b)
+    bc = cv2.norm(b - c)
+    ac = cv2.norm(a - c)
+    return max(ab, bc, ac) / min(ab, bc, ac)
