@@ -39,6 +39,7 @@ if __name__ == "__main__":
                 time.sleep(1)
                 window_handle = FindWindow(None, "Euro Truck Simulator 2")
                 continue
+            # TODO: change to GetClientRect
             window_rect = GetWindowRect(window_handle)
             ets2_window = {
                 "top": window_rect[1] + CROP_Y,
@@ -57,7 +58,7 @@ if __name__ == "__main__":
             # only send input if ETS2 is in focus
             # TODO: need to figure out some toggle to enable/disable input
             if GetForegroundWindow() == window_handle:
-                send_input(steering, throttle)
+                send_input(telemetry, steering, throttle)
 
             print(f"FPS: {1/(time.time()-last_time)}")
             last_time = time.time()
