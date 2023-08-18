@@ -108,8 +108,12 @@ def infer_polyline(im_src):
     centreline_np = np.array(centreline, np.int32)
     centreline_np = centreline_np.reshape((-1, 1, 2))
     cv2.polylines(im_out, [centreline_np], False, YELLOW)
-
-    # TODO: need to translate/scale centreline to be about origin
+    if len(centreline) > 0:
+        # offset so 0,0 is at truck centre
+        centreline = np.subtract(centreline, TRUCK_CENTRE)
+        # 180 degree rotation so that x+ is left and y+ is in front
+        # 1/4 scale so 1 unit = 1 metre
+        centreline = np.multiply(centreline, (-0.25, -0.25))
 
     cv2.imshow("Source Image", im_src)
     cv2.imshow("Mask", comb_mask)
