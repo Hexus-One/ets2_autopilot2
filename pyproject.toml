@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "ets2-autopilot2"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "ets2_autopilot2"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+mss = "^9.0.1"
+numpy = "^1.25.2"
+opencv-contrib-python = "^4.8.0.76"
+pywin32 = "^306"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.7.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
