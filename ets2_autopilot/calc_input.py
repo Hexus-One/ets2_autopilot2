@@ -23,6 +23,9 @@ class CalcInput:
         self.steering_integral = 0
         self.throttle_integral = 0
 
+    def convert_to_seconds(self, timestamp_microseconds):
+    return timestamp_microseconds / 1_000_000
+
     def filter_coordinates(self, centreline, threshold=0.1):
     return [coord for coord in centreline if coord[1] > threshold]
 
@@ -48,8 +51,8 @@ class CalcInput:
         filtered_centreline = self.filter_coordinates(centreline)
         
         # Calculate dt
-        dt_steering = telemetry["timestamp"] - self.prev_timestamp_steering
-        dt_throttle = telemetry["timestamp"] - self.prev_timestamp_throttle
+        dt_steering = timestamp_steering - self.convert_to_seconds(self.prev_timestamp_steering)
+        dt_throttle = timestamp_throttle - self.convert_to_seconds(self.prev_timestamp_throttle)
 
         # Steering PID
         steering_error = self.calculate_steering_error(centreline)
