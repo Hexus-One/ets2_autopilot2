@@ -15,7 +15,7 @@ from win32gui import (
 )
 
 from ets2_autopilot.imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
-from ets2_autopilot.telemetry import get_telemetry
+from ets2_telemetry import get_telemetry
 from ets2_autopilot.calc_input import calc_input
 from ets2_autopilot.send_input import send_input
 
@@ -58,8 +58,8 @@ if __name__ == "__main__":
             # TODO: need to figure out some toggle to enable/disable input
             if GetForegroundWindow() == window_handle:
                 send_input(steering, throttle)
-
-            print(f"FPS: {1/(time.time()-last_time)}")
+            print(telemetry)
+            # print(f"FPS: {1/(time.time()-last_time)}")
             last_time = time.time()
             # Press "q" to quit
             if cv2.waitKey(1) & 0xFF == ord("q"):

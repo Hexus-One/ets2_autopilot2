@@ -17,7 +17,7 @@ def get_game_values(telemetry_memory_map):
         "steer": struct.unpack("f", telemetry_memory_map[968:972])[0],
         "throttle": struct.unpack("f", telemetry_memory_map[972:976])[0],
         "brake": struct.unpack("f", telemetry_memory_map[980:984])[0],
-        "clutch": struct.unpack("f", telemetry_memory_map[984:998])[0],
+        "clutch": struct.unpack("f", telemetry_memory_map[984:988])[0],
     }
 
 
