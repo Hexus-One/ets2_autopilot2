@@ -21,16 +21,23 @@ def send_input(telemetry, steering, throttle):
         pydirectinput.keyUp("down", _pause=False)
         pydirectinput.keyUp("up", _pause=False)
     """
-    
-    print(f'{telemetry["control_values"]["input"]["steer"]} > {steering} ?')
-    if telemetry["control_values"]["input"]["steer"] > steering:
+
+    # TODO: fix asap!!
+    curr_steering = telemetry["control_values"]["input"]["brake"]
+    steering_error = curr_steering - steering
+    # print(f'{curr_steering} > {steering} ?')
+    steer(steering_error * 436)  # magic number calculated through magic
+    # 100 pixels -> 0.2293 steer
+    """
+    if curr_steering > steering:
         steer(10)
     else:
         steer(-10)
-    
+    """
     return
 
 
 # TODO: change this to platform agnostic
 def steer(movement):
+    movement = round(movement)
     pydirectinput.move(movement, 0, _pause=False, relative=True)
