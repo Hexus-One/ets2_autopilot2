@@ -1,18 +1,12 @@
-# calc_input.py
-# from telemetry and centreline, calculate what inputs to send
+import math
 
-# telemetry avaiable is here: https://github.com/RenCloud/scs-sdk-plugin#telemetry-fields-and-the-c-object
-# centreline scale is 1 unit -> 25cm
-#  (x, y) -> (0, 0) is centre of the cab
-#  +x is left, -x is right, +y is forwards and -y is backwards
 class CalcInput:
     def __init__(self, Kp_steering, Ki_steering, Kd_steering, Kp_throttle, Ki_throttle, Kd_throttle):
-        # PID gains for steering
+        # PID gains
         self.Kp_steering = Kp_steering
         self.Ki_steering = Ki_steering
         self.Kd_steering = Kd_steering
 
-        # PID gains for throttle
         self.Kp_throttle = Kp_throttle
         self.Ki_throttle = Ki_throttle
         self.Kd_throttle = Kd_throttle
@@ -29,14 +23,11 @@ class CalcInput:
         self.steering_integral = 0
         self.throttle_integral = 0
 
-    # ... (Rest of the class implementation)
-
-
     def calculate_heading(self):
         # Implementation for calculating heading goes here
         pass
 
-    def calculate_steering_error(self, centreline, heading):
+    def calculate_steering_error(self, centreline):
         steering_error = centreline[0][0]
         return steering_error
 
@@ -50,11 +41,62 @@ class CalcInput:
         pass
 
     def calc_input(self, telemetry, centreline):
-        # ... (Same code as before)
+        # Calculate dt
+        dt_steering = telemetry["timestamp"] - self.prev_timestamp_steering
+        dt_throttle = telemetry["timestamp"] - self.prev_timestamp_throttle
+
+        # Steering PID
+        steering_error = self.calculate_steering_error(centreline)
+        self.steering_integral += steering_error * dt_steering
+        steering_derivative = (steering_error - self.prev_steering_error) / dt_steering
+
+        # Throttle PID
+        throttle_error = self.calculate_throttle_error(centreline, telemetry["truck"]["speed"])
+        self.throttle_integral += throttle_error * dt_throttle
+        throttle_derivative = (throttle_error - self.prev_throttle_error) / dt_throttle
+
+        # Apply PID formula
+        steering = self.Kp_steering * steering_error + self.Ki_steering * self.steering_integral + self.Kd_steering * steering_derivative
+        throttle = self.Kp_throttle * throttle_error + self.Ki_throttle * self.throttle_integral + self.Kd_throttle * throttle_derivative
+
+        # Clamp values
+        steering = max(-1, min(1, steering))
+        throttle = max(-1, min(1, throttle))
+
+        # Update previous values
+        self.prev_steering_error = steering_error
+        self.prev_throttle_error = throttle_error
+        self.prev_timestamp_steering = telemetry["timestamp"]
+        self.prev_timestamp_throttle = telemetry["timestamp"]
 
         return steering, throttle
 
     def is_ninety_degree_turn(self, centreline, severe_threshold=45, straight_threshold=15):
-        # ... (Same code as before)
+        angles = []
+        for i in range(1, len(centreline) - 1):
+            x1, y1 = centreline[i - 1]
+            x2, y2 = centreline[i]
+            x3, y3 = centreline[i + 1]
+
+            vec1 = (x2 - x1, y2 - y1)
+            vec2 = (x3 - x2, y3 - y2)
+
+            mag1 = math.sqrt(vec1[0]**2 + vec1[1]**2)
+            mag2 = math.sqrt(vec2[0]**2 + vec2[1]**2)
+
+            dot_product = vec1[0] * vec2[0] + vec1[1] * vec2[1]
+
+            angle = math.degrees(math.acos(dot_product / (mag1 * mag2)))
+
+            angles.append(angle)
+
+        # Check for a severe angle variation and relatively straight paths before and after
+        for i in range(1, len(angles) - 1):
+            if angles[i] > severe_threshold:
+                before_severe = all(angle < straight_threshold for angle in angles[:i])
+                after_severe = all(angle < straight_threshold for angle in angles[i+1:])
+
+                if before_severe and after_severe:
+                    return True
 
         return False
