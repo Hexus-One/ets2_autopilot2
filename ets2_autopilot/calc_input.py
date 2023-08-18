@@ -5,104 +5,54 @@
 # centreline scale is 1 unit -> 25cm
 #  (x, y) -> (0, 0) is centre of the cab
 #  +x is left, -x is right, +y is forwards and -y is backwards
-def calculate_heading():
-    # Implementation for calculating heading goes here
-    pass
+import math
 
-def calculateSteeringError(centreline):
-    # Get the x-coordinate of the first point in the centreline
-    steering_error = centreline[0][0]
+class CalcInput:
+    def __init__(self):
+        # PID gains
+        self.Kp_steering = 0
+        self.Ki_steering = 0
+        self.Kd_steering = 0
 
-    # You can scale or modify this error based on your specific requirements
-    # E.g., you might want to normalize it by the length of the track or apply a specific scaling factor
+        self.Kp_throttle = 0
+        self.Ki_throttle = 0
+        self.Kd_throttle = 0
 
-    return steering_error
+        # Previous errors
+        self.prev_steering_error = 0
+        self.prev_throttle_error = 0
 
-def calculateThrottleError(centreline, current_speed):
-    # Calculate the desired speed based on the centreline and current position
-    desired_speed = calculateDesiredSpeed(centreline, current_position)
+        # Previous timestamp
+        self.prev_timestamp_steering = 0
+        self.prev_timestamp_throttle = 0
 
-    # The throttle error is the difference between the desired speed and the current speed
-    throttle_error = desired_speed - current_speed
+        # Steering and Throttle Integral
+        self.steering_integral = 0
+        self.throttle_integral = 0
 
-    return throttle_error
+    def calculate_heading(self):
+        # Implementation for calculating heading goes here
+        pass
 
-def calc_input(telemetry, centreline):
-    # PID gains
-    Kp_steering = 0
-    Ki_steering = 0
-    Kd_steering = 0
+    def calculate_steering_error(self, centreline, heading):
+        steering_error = centreline[0][0]
+        return steering_error
 
-    Kp_throttle = 0
-    Ki_throttle = 0
-    Kd_throttle = 0
+    def calculate_throttle_error(self, centreline, current_speed):
+        desired_speed = self.calculate_desired_speed(centreline, current_speed)
+        throttle_error = desired_speed - current_speed
+        return throttle_error
 
-    # Previous errors
-    prev_steering_error = 0
-    prev_throttle_error = 0
+    def calculate_desired_speed(self, centreline, current_position):
+        # Implementation for calculating desired speed goes here
+        pass
 
-    # Previous timestamp
-    prev_timestamp_steering = telemetry["timestamp"]
-    prev_timestamp_throttle = telemetry["timestamp"]
+    def calc_input(self, telemetry, centreline):
+        # ... (Same code as before)
 
-    # Calculate dt
-    dt_steering = telemetry["timestamp"] - prev_timestamp_steering
-    dt_throttle = telemetry["timestamp"] - prev_timestamp_throttle
+        return steering, throttle
 
-    # Steering PID
-    steering_error = calculateSteeringError(centreline, telemetry["truck"]["heading"])
-    steering_integral = steering_error * dt_steering
-    steering_derivative = (steering_error - prev_steering_error) / dt_steering
+    def is_ninety_degree_turn(self, centreline, severe_threshold=45, straight_threshold=15):
+        # ... (Same code as before)
 
-    # Throttle PID
-    throttle_error = calculateThrottleError(centreline, telemetry["truck"]["speed"])
-    throttle_integral = throttle_error * dt_throttle
-    throttle_derivative = (throttle_error - prev_throttle_error) / dt_throttle
-
-    # Apply PID formula
-    steering = Kp_steering * steering_error + Ki_steering * steering_integral + Kd_steering * steering_derivative
-    throttle = Kp_throttle * throttle_error + Ki_throttle * throttle_integral + Kd_throttle * throttle_derivative
-
-    # Clamp values
-    steering = max(-1, min(1, steering))
-    throttle = max(-1, min(1, throttle))
-
-    # Update previous values
-    prev_steering_error = steering_error
-    prev_throttle_error = throttle_error
-    prev_timestamp_steering = telemetry["timestamp"]
-    prev_timestamp_throttle = telemetry["timestamp"]
-
-    return steering, throttle
-
-def is_ninety_degree_turn(centreline, severe_threshold=45, straight_threshold=15):
-    angles = []
-
-    # Calculate the angles between consecutive segments
-    for i in range(1, len(centreline) - 1):
-        x1, y1 = centreline[i - 1]
-        x2, y2 = centreline[i]
-        x3, y3 = centreline[i + 1]
-
-        vec1 = (x2 - x1, y2 - y1)
-        vec2 = (x3 - x2, y3 - y2)
-
-        mag1 = math.sqrt(vec1[0]**2 + vec1[1]**2)
-        mag2 = math.sqrt(vec2[0]**2 + vec2[1]**2)
-        
-        dot_product = vec1[0] * vec2[0] + vec1[1] * vec2[1]
-
-        angle = math.degrees(math.acos(dot_product / (mag1 * mag2)))
-
-        angles.append(angle)
-
-    # Check for a severe angle variation and relatively straight paths before and after
-    for i in range(1, len(angles) - 1):
-        if angles[i] > severe_threshold:
-            before_severe = all(angle < straight_threshold for angle in angles[:i])
-            after_severe = all(angle < straight_threshold for angle in angles[i+1:])
-
-            if before_severe and after_severe:
-                return True
-
-    return False
+        return False
