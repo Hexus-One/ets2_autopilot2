@@ -22,7 +22,7 @@ def send_input(telemetry, steering, throttle):
     """
 
     # TODO: fix asap!!
-    curr_steering = telemetry["control_values"]["input"]["brake"]
+    curr_steering = telemetry["control_values"]["input"]["steer"]
     steering_error = curr_steering - steering
     # print(f'{curr_steering} > {steering} ?')
     steer(steering_error * 400)  # magic number calculated through magic
