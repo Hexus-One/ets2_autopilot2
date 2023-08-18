@@ -5,8 +5,6 @@
 # centreline scale is 1 unit -> 25cm
 #  (x, y) -> (0, 0) is centre of the cab
 #  +x is left, -x is right, +y is forwards and -y is backwards
-import math
-
 class CalcInput:
     def __init__(self, Kp_steering, Ki_steering, Kd_steering, Kp_throttle, Ki_throttle, Kd_throttle):
         # PID gains for steering
