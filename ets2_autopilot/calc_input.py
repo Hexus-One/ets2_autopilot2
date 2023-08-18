@@ -8,15 +8,16 @@
 import math
 
 class CalcInput:
-    def __init__(self):
-        # PID gains
-        self.Kp_steering = 0
-        self.Ki_steering = 0
-        self.Kd_steering = 0
+    def __init__(self, Kp_steering, Ki_steering, Kd_steering, Kp_throttle, Ki_throttle, Kd_throttle):
+        # PID gains for steering
+        self.Kp_steering = Kp_steering
+        self.Ki_steering = Ki_steering
+        self.Kd_steering = Kd_steering
 
-        self.Kp_throttle = 0
-        self.Ki_throttle = 0
-        self.Kd_throttle = 0
+        # PID gains for throttle
+        self.Kp_throttle = Kp_throttle
+        self.Ki_throttle = Ki_throttle
+        self.Kd_throttle = Kd_throttle
 
         # Previous errors
         self.prev_steering_error = 0
@@ -29,6 +30,9 @@ class CalcInput:
         # Steering and Throttle Integral
         self.steering_integral = 0
         self.throttle_integral = 0
+
+    # ... (Rest of the class implementation)
+
 
     def calculate_heading(self):
         # Implementation for calculating heading goes here
