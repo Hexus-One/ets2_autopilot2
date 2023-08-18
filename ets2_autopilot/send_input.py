@@ -10,7 +10,7 @@ import pydirectinput
 def send_input(telemetry, steering, throttle):
     # use relative move to control steering
     # positive to steer right, negative to steer left
-    steer(10)
+    """
     if throttle == 1:
         pydirectinput.keyUp("down", _pause=False)
         pydirectinput.keyDown("up", _pause=False)
@@ -20,13 +20,14 @@ def send_input(telemetry, steering, throttle):
     else: # 0 throttle/brake, just coast
         pydirectinput.keyUp("down", _pause=False)
         pydirectinput.keyUp("up", _pause=False)
-
     """
-    if telemetry["InputValues"]["Steering"] > steering:
-        steer(5)
+    
+    print(f'{telemetry["control_values"]["input"]["steer"]} > {steering} ?')
+    if telemetry["control_values"]["input"]["steer"] > steering:
+        steer(10)
     else:
-        steer(-5)
-    """
+        steer(-10)
+    
     return
 
 

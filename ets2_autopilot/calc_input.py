@@ -44,15 +44,15 @@ class CalcInput:
 
     def calculate_desired_speed(self, centreline, current_position):
         # Implementation for calculating desired speed goes here
-        pass
+        return 0
 
     def calc_input(self, telemetry, centreline):
         # Filter the coordinates
         filtered_centreline = self.filter_coordinates(centreline)
         
         # Calculate dt
-        dt_steering = timestamp_steering - self.convert_to_seconds(self.prev_timestamp_steering)
-        dt_throttle = timestamp_throttle - self.convert_to_seconds(self.prev_timestamp_throttle)
+        dt_steering = telemetry["general_info"]["timestamp"] - self.convert_to_seconds(self.prev_timestamp_steering)
+        dt_throttle = telemetry["general_info"]["timestamp"] - self.convert_to_seconds(self.prev_timestamp_throttle)
 
         # Steering PID
         steering_error = self.calculate_steering_error(centreline)
@@ -60,7 +60,9 @@ class CalcInput:
         steering_derivative = (steering_error - self.prev_steering_error) / dt_steering
 
         # Throttle PID
-        throttle_error = self.calculate_throttle_error(centreline, telemetry["truck"]["speed"])
+        # throttle_error = self.calculate_throttle_error(centreline, telemetry["truck"]["speed"])
+        # placeholder
+        throttle_error = self.calculate_throttle_error(centreline, 0)
         self.throttle_integral += throttle_error * dt_throttle
         throttle_derivative = (throttle_error - self.prev_throttle_error) / dt_throttle
 
@@ -75,8 +77,8 @@ class CalcInput:
         # Update previous values
         self.prev_steering_error = steering_error
         self.prev_throttle_error = throttle_error
-        self.prev_timestamp_steering = telemetry["timestamp"]
-        self.prev_timestamp_throttle = telemetry["timestamp"]
+        self.prev_timestamp_steering = telemetry["general_info"]["timestamp"]
+        self.prev_timestamp_throttle = telemetry["general_info"]["timestamp"]
 
         return steering, throttle
 

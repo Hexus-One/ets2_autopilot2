@@ -15,8 +15,8 @@ from win32gui import (
 )
 
 from ets2_autopilot.imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
-from ets2_autopilot.telemetry import get_telemetry
-from ets2_autopilot.calc_input import calc_input
+from ets2_telemetry import get_telemetry
+from ets2_autopilot.calc_input import CalcInput
 from ets2_autopilot.send_input import send_input
 
 if __name__ == "__main__":
@@ -28,6 +28,8 @@ if __name__ == "__main__":
         errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
     window_handle = FindWindow(None, "Euro Truck Simulator 2")
+
+    pid_controller = CalcInput(0.1, 0, 0, 0.1, 0, 0)
 
     with mss.mss() as sct:
         last_time = time.time()
@@ -53,14 +55,15 @@ if __name__ == "__main__":
 
             # magic happens here
             centreline, _ = infer_polyline(im_src)
-            telemetry = get_telemetry()
-            steering, throttle = calc_input(telemetry, centreline)
-            # only send input if ETS2 is in focus
-            # TODO: need to figure out some toggle to enable/disable input
-            if GetForegroundWindow() == window_handle:
-                send_input(telemetry, steering, throttle)
+            telemetry = get_telemetry() # might have to dynamically update
+            if len(centreline) > 0:
+                steering, throttle = pid_controller.calc_input(telemetry, centreline)
+                # only send input if ETS2 is in focus
+                # TODO: need to figure out some toggle to enable/disable input
+                if GetForegroundWindow() == window_handle:
+                    send_input(telemetry, steering, throttle)
 
-            print(f"FPS: {1/(time.time()-last_time)}")
+            # print(f"FPS: {1/(time.time()-last_time)}")
             last_time = time.time()
             # Press "q" to quit
             if cv2.waitKey(1) & 0xFF == ord("q"):
