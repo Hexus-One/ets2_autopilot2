@@ -23,11 +23,22 @@ This mainly relies on the HUD GPS with an active route to determine the road ahe
 1. Clone this project to your local desktop.
 2. Install Python 3.11.4 - [releases available here.](https://www.python.org/downloads/release/python-3114/)
    - Optionally setup a virtual environment with `venv`
-3. Install the required packages with:
+3. Install the required Python packages with:
 ```
 pip install -r requirements.txt
 ```
-4. Run `main.py` to start the program.
+4. Install [RenCloud's SCS Telemetry plugin](https://github.com/RenCloud/scs-sdk-plugin#installation).
+5. (For Windows users) go to `C:\Users\{YOURUSERNAME}\Documents\Euro Truck Simulator 2\profiles\{some random hexcode}\controls.sii` or `C:\Users\{YOURUSERNAME}\Documents\Euro Truck Simulator 2\steam_profiles\{some random hexcode}\controls.sii` and edit the following lines:
+```
+config_lines[0]: "device keyboard `di8.keyboard`"
+config_lines[1]: "device mouse `fusion.mouse`"
+```
+to 
+```
+config_lines[0]: "device keyboard `sys.keyboard`"
+config_lines[1]: "device mouse `sys.mouse`"
+```
+6. Run `main.py` to start the program.
 
 ## Contributing
 TBD
