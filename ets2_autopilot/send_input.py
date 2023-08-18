@@ -6,7 +6,6 @@
 
 import pydirectinput
 
-
 def send_input(telemetry, steering, throttle):
     # use relative move to control steering
     # positive to steer right, negative to steer left
@@ -26,8 +25,9 @@ def send_input(telemetry, steering, throttle):
     curr_steering = telemetry["control_values"]["input"]["brake"]
     steering_error = curr_steering - steering
     # print(f'{curr_steering} > {steering} ?')
-    steer(steering_error * 436)  # magic number calculated through magic
-    # 100 pixels -> 0.2293 steer
+    steer(steering_error * 400)  # magic number calculated through magic
+    # 100 pixels -> 0.2293 steer at 0.40 sens -> 436
+    # 100 pixels -> 0.7524 steer at 1.50 sens -> 133
     """
     if curr_steering > steering:
         steer(10)
@@ -38,6 +38,8 @@ def send_input(telemetry, steering, throttle):
 
 
 # TODO: change this to platform agnostic
+# at the moment, moves the mouse to input steering
+# positive = right, negative = left
 def steer(movement):
     movement = round(movement)
     pydirectinput.move(movement, 0, _pause=False, relative=True)
