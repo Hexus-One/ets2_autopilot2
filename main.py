@@ -19,6 +19,19 @@ from ets2_telemetry import get_telemetry
 from ets2_autopilot.calc_input import CalcInput
 from ets2_autopilot.send_input import send_input
 
+
+def change_p(val):
+    pid_controller.update_constants(Kp_steering=val / 100)
+
+
+def change_i(val):
+    pid_controller.update_constants(Ki_steering=val / 100)
+
+
+def change_d(val):
+    pid_controller.update_constants(Kd_steering=val / 100)
+
+
 if __name__ == "__main__":
     print("Hello, world!")
     # DPI Scaling workaround from
@@ -29,7 +42,11 @@ if __name__ == "__main__":
 
     window_handle = FindWindow(None, "Euro Truck Simulator 2")
 
-    pid_controller = CalcInput(0.1, 0, 0, 0.1, 0, 0)
+    pid_controller = CalcInput(0.2, 0, 0, 0.1, 0, 0)
+    cv2.namedWindow("PID tuning")
+    cv2.createTrackbar("P", "PID tuning", 0, 100, change_p)
+    cv2.createTrackbar("I", "PID tuning", 0, 100, change_i)
+    cv2.createTrackbar("D", "PID tuning", 0, 100, change_d)
 
     with mss.mss() as sct:
         last_time = time.time()
@@ -55,9 +72,12 @@ if __name__ == "__main__":
 
             # magic happens here
             centreline, _ = infer_polyline(im_src)
-            telemetry = get_telemetry() # might have to dynamically update
+            telemetry = get_telemetry()  # might have to dynamically update
             if len(centreline) > 0:
-                steering, throttle = pid_controller.calc_input(telemetry, centreline)
+                dt = time.time() - last_time
+                steering, throttle = pid_controller.calc_input(
+                    telemetry, centreline, dt
+                )
                 # only send input if ETS2 is in focus
                 # TODO: need to figure out some toggle to enable/disable input
                 if GetForegroundWindow() == window_handle:
