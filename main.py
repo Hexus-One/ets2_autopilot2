@@ -44,9 +44,9 @@ if __name__ == "__main__":
 
     pid_controller = CalcInput(0.2, 0, 0, 0.1, 0, 0)
     cv2.namedWindow("PID tuning")
-    cv2.createTrackbar("P", "PID tuning", 0, 100, change_p)
-    cv2.createTrackbar("I", "PID tuning", 0, 100, change_i)
-    cv2.createTrackbar("D", "PID tuning", 0, 100, change_d)
+    cv2.createTrackbar("P", "PID tuning", round(pid_controller.Kp_steering*100), 100, change_p)
+    cv2.createTrackbar("I", "PID tuning", round(pid_controller.Ki_steering*100), 100, change_i)
+    cv2.createTrackbar("D", "PID tuning", round(pid_controller.Kd_steering*100), 100, change_d)
 
     with mss.mss() as sct:
         last_time = time.time()
