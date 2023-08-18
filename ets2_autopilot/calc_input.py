@@ -24,10 +24,10 @@ class CalcInput:
         self.throttle_integral = 0
 
     def convert_to_seconds(self, timestamp_microseconds):
-    return timestamp_microseconds / 1_000_000
+        return timestamp_microseconds / 1_000_000
 
     def filter_coordinates(self, centreline, threshold=0.1):
-    return [coord for coord in centreline if coord[1] > threshold]
+        return [coord for coord in centreline if coord[1] > threshold]
 
     def calculate_heading(self):
         # Implementation for calculating heading goes here
