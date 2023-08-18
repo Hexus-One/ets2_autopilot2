@@ -23,6 +23,9 @@ class CalcInput:
         self.steering_integral = 0
         self.throttle_integral = 0
 
+    def filter_coordinates(self, centreline, threshold=0.1):
+    return [coord for coord in centreline if coord[1] > threshold]
+
     def calculate_heading(self):
         # Implementation for calculating heading goes here
         pass
@@ -41,6 +44,9 @@ class CalcInput:
         pass
 
     def calc_input(self, telemetry, centreline):
+        # Filter the coordinates
+        filtered_centreline = self.filter_coordinates(centreline)
+        
         # Calculate dt
         dt_steering = telemetry["timestamp"] - self.prev_timestamp_steering
         dt_throttle = telemetry["timestamp"] - self.prev_timestamp_throttle
@@ -72,6 +78,7 @@ class CalcInput:
         return steering, throttle
 
     def is_ninety_degree_turn(self, centreline, severe_threshold=45, straight_threshold=15):
+        filtered_centreline = self.filter_coordinates(centreline)
         angles = []
         for i in range(1, len(centreline) - 1):
             x1, y1 = centreline[i - 1]
