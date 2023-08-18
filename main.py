@@ -8,7 +8,11 @@ import time
 import cv2
 import mss
 import numpy as np
-from win32gui import FindWindow, GetWindowRect  # ignore squiggly, we have pywin32
+from win32gui import (
+    FindWindow,
+    GetForegroundWindow,
+    GetWindowRect,
+)
 
 from ets2_autopilot.imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
 from ets2_autopilot.telemetry import get_telemetry
@@ -50,7 +54,10 @@ if __name__ == "__main__":
             centreline, _ = infer_polyline(im_src)
             telemetry = get_telemetry()
             steering, throttle = calc_input(telemetry, centreline)
-            send_input(steering, throttle)
+            # only send input if ETS2 is in focus
+            # TODO: need to figure out some toggle to enable/disable input
+            if GetForegroundWindow() == window_handle:
+                send_input(steering, throttle)
 
             print(f"FPS: {1/(time.time()-last_time)}")
             last_time = time.time()
