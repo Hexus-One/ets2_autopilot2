@@ -36,7 +36,9 @@ class TelemetryReader:
                 f"ETS2's telemetry located at {self.memory_location} is not to be found. Telemetry is not enabled"
             )
 
-    def update_telemetry(self):
+    def update_telemetry(self, data_class: AbstractDataClass):
         """Read the telemetry data"""
         if self.memory_map is None:
             print("Telemetry stream is not open. Can not update!")
+
+        data_class.update(self.memory_map.buf)
