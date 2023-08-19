@@ -95,7 +95,7 @@ class CalcInput:
 
         # Calculate steering using geometry
         # steering = math.atan2(2 * wheelbase * look_ahead_y_car, look_ahead_distance**2)
-        steering_angle = math.atan((axle_to_axle_length)/(math.sqrt(look_ahead_x^2+look_ahead_y^2-axle_to_axle_length^2))) # generates steering angle in radians
+        steering_angle = math.atan2((axle_to_axle_length)/(math.sqrt(look_ahead_x^2+look_ahead_y^2))) # generates steering angle in radians
         steering_output = convert_to_steering_output(steering_angle)
         if look_ahead_x > 0
             steering_output = steering_output*-1
