@@ -80,7 +80,7 @@ class CalcInput:
 
         return steering, throttle
 
-    def pure_pursuit_control_car(yaw, waypoints, look_ahead_distance, axle_to_axle_length): # waypoints is what centreline normally is
+    def pure_pursuit_control_car(waypoints, look_ahead_distance, axle_to_axle_length): # waypoints is what centreline normally is
         # Find the look-ahead point
         min_distance = float('inf')
         look_ahead_x = look_ahead_y = None
