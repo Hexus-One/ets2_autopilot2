@@ -129,6 +129,45 @@ class CalcInput:
         """
         return steering, throttle
 
+    def pure_pursuit_control_car(
+        waypoints, look_ahead_distance, axle_to_axle_length
+    ):  # waypoints is what centreline normally is
+        # Find the look-ahead point
+        min_distance = float("inf")
+        look_ahead_x = look_ahead_y = None
+        for wx, wy in waypoints:
+            distance = math.sqrt(wx**2 + wy**2)
+            if distance < look_ahead_distance and distance < min_distance:
+                look_ahead_x, look_ahead_y = wx, wy
+                min_distance = distance
+
+        if look_ahead_x is None:
+            return 0  # No look-ahead point found; return 0 steering
+
+        # Calculate steering using geometry
+        # steering = math.atan2(2 * wheelbase * look_ahead_y_car, look_ahead_distance**2)
+        steering_angle = math.atan2(
+            (axle_to_axle_length) / (math.sqrt(look_ahead_x ^ 2 + look_ahead_y ^ 2))
+        )  # generates steering angle in radians
+        steering_output = convert_to_steering_output(steering_angle)
+        if look_ahead_x > 0:
+            steering_output = steering_output * -1
+
+        return steering_output
+
+    def convert_to_steering_output(steering_angle_radians):
+        # Maximum steering angle in radians (corresponding to full lock)
+        max_steering_angle_degrees = 38
+        max_steering_angle_radians = math.radians(max_steering_angle_degrees)
+
+        # Convert steering angle to the range of [-1, 1]
+        steering_output = steering_angle_radians / max_steering_angle_radians
+
+        # Clamp the steering output to be within the range of [-1, 1]
+        steering_output = max(-1, min(1, steering_output))
+
+        return steering_output
+
     def is_ninety_degree_turn(
         self, centreline, severe_threshold=45, straight_threshold=15
     ):
