@@ -80,6 +80,31 @@ class CalcInput:
 
         return steering, throttle
 
+    def pure_pursuit_control_car(yaw, waypoints, look_ahead_distance, wheelbase): # waypoints is what centreline normally is
+        # Find the look-ahead point
+        min_distance = float('inf')
+        look_ahead_x = look_ahead_y = None
+        for wx, wy in waypoints:
+            distance = math.sqrt((x - wx)**2 + (y - wy)**2)
+            if distance < look_ahead_distance and distance < min_distance:
+                look_ahead_x, look_ahead_y = wx, wy
+                min_distance = distance
+
+        if look_ahead_x is None:
+            return 0  # No look-ahead point found; return 0 steering
+
+        # Transform look-ahead point to car's frame (rear axle)
+        dx = look_ahead_x # - x
+        dy = look_ahead_y # - y
+        look_ahead_x_car = math.cos(-yaw) * dx - math.sin(-yaw) * dy
+        look_ahead_y_car = math.sin(-yaw) * dx + math.cos(-yaw) * dy
+
+        # Calculate steering using geometry
+        steering = math.atan2(2 * wheelbase * look_ahead_y_car, look_ahead_distance**2)
+
+    return steering
+
+
     def is_ninety_degree_turn(self, centreline, severe_threshold=45, straight_threshold=15):
         filtered_centreline = self.filter_coordinates(centreline)
         angles = []
