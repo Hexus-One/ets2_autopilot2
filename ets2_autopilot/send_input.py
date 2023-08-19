@@ -30,7 +30,9 @@ def send_input(telemetry: TelemetryReader, steering, throttle):
     curr_steering = user_inputs.steer
     steering_error = curr_steering - steering
     # print(f'{curr_steering} > {steering} ?')
-    steer(steering_error * 400)  # magic number calculated through magic
+    steer(steering_error * 400)  # magic number calculated through magic:
+    # set the magic steer multiplier to 90% of the value below
+    # 100 pixels -> 0.0633509 steer at 0.05 sens -> 1579
     # 100 pixels -> 0.2293 steer at 0.40 sens -> 436
     # 100 pixels -> 0.7524 steer at 1.50 sens -> 133
     """

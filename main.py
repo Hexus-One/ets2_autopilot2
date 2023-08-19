@@ -21,13 +21,6 @@ import ets2_autopilot.calc_input as calc_input
 from ets2_autopilot.send_input import send_input
 
 
-look_ahead = 10
-
-
-def set_look_ahead(val):
-    look_ahead = val
-
-
 if __name__ == "__main__":
     print("Hello, world!")
     # DPI Scaling workaround from
@@ -39,9 +32,6 @@ if __name__ == "__main__":
     telemetry = TelemetryReader()
     general_info = GeneralInfo()
     window_handle = FindWindow(None, "Euro Truck Simulator 2")
-
-    cv2.namedWindow("Pure pursuit tuning")
-    cv2.createTrackbar("P", "Pure pursuit tuning", look_ahead, 100, set_look_ahead)
 
     with mss.mss() as sct:
         last_time = time.time()
@@ -71,7 +61,7 @@ if __name__ == "__main__":
             if len(centreline) > 0:
                 dt = time.time() - last_time
                 steering = calc_input.CalcInput.pure_pursuit_control_car(
-                    centreline, look_ahead, 3.85289538  # magic wheelbase
+                    centreline, 10, 3.85289538  # magic wheelbase
                 )
                 # only send input if ETS2 is in focus and unpaused
                 # TODO: need to figure out some toggle to enable/disable input
@@ -80,8 +70,9 @@ if __name__ == "__main__":
                     and general_info.paused == False
                 ):
                     send_input(telemetry, steering, 0)
-
-            print(f"FPS: {1/(time.time()-last_time)}")
+            elapsed = time.time()-last_time
+            fps = 1 / elapsed
+            print(f"FPS: {round(fps, 2)}" + "-" * round(fps/10))
             last_time = time.time()
             # Press "q" to quit
             if cv2.waitKey(1) & 0xFF == ord("q"):

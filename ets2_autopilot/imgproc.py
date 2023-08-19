@@ -194,7 +194,7 @@ def contours_to_centreline(contours):
         else:
             # right is better
             curr_R = cand_R
-    # filter_jagged(centreline, 100)
+    filter_jagged(centreline, 100)
     return centreline, diagonals
 
 
