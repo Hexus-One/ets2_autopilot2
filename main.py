@@ -17,20 +17,15 @@ from win32gui import (
 from ets2_autopilot.imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
 from ets2_telemetry import TelemetryReader
 from ets2_telemetry.general_info import GeneralInfo
-from ets2_autopilot.calc_input import CalcInput
+import ets2_autopilot.calc_input as calc_input
 from ets2_autopilot.send_input import send_input
 
 
-def change_p(val):
-    pid_controller.set_constants(Kp_steering=val / 100)
+look_ahead = 10
 
 
-def change_i(val):
-    pid_controller.set_constants(Ki_steering=val / 100)
-
-
-def change_d(val):
-    pid_controller.set_constants(Kd_steering=val / 100)
+def set_look_ahead(val):
+    look_ahead = val
 
 
 if __name__ == "__main__":
@@ -45,17 +40,8 @@ if __name__ == "__main__":
     general_info = GeneralInfo()
     window_handle = FindWindow(None, "Euro Truck Simulator 2")
 
-    pid_controller = CalcInput(0.2, 0, 0, 0.1, 0, 0)
-    cv2.namedWindow("PID tuning")
-    cv2.createTrackbar(
-        "P", "PID tuning", round(pid_controller.Kp_steering * 100), 100, change_p
-    )
-    cv2.createTrackbar(
-        "I", "PID tuning", round(pid_controller.Ki_steering * 100), 100, change_i
-    )
-    cv2.createTrackbar(
-        "D", "PID tuning", round(pid_controller.Kd_steering * 100), 100, change_d
-    )
+    cv2.namedWindow("Pure pursuit tuning")
+    cv2.createTrackbar("P", "Pure pursuit tuning", look_ahead, 100, set_look_ahead)
 
     with mss.mss() as sct:
         last_time = time.time()
@@ -84,16 +70,16 @@ if __name__ == "__main__":
             telemetry.update_telemetry(general_info)
             if len(centreline) > 0:
                 dt = time.time() - last_time
-                steering, throttle = pid_controller.calc_input(
-                    telemetry, centreline, dt
+                steering = calc_input.CalcInput.pure_pursuit_control_car(
+                    centreline, look_ahead, 3.85289538  # magic wheelbase
                 )
                 # only send input if ETS2 is in focus and unpaused
                 # TODO: need to figure out some toggle to enable/disable input
                 if (
                     GetForegroundWindow() == window_handle
-                    and general_info.game_paused == False
+                    and general_info.paused == False
                 ):
-                    send_input(telemetry, steering, throttle)
+                    send_input(telemetry, steering, 0)
 
             print(f"FPS: {1/(time.time()-last_time)}")
             last_time = time.time()

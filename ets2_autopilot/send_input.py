@@ -4,9 +4,12 @@
 #  config_lines[0]: "device keyboard `sys.keyboard`"
 #  config_lines[1]: "device mouse `sys.mouse`"
 
+from ets2_telemetry import TelemetryReader
+from ets2_telemetry.user_inputs import UserInputs
 import pydirectinput
 
-def send_input(telemetry, steering, throttle):
+
+def send_input(telemetry: TelemetryReader, steering, throttle):
     # use relative move to control steering
     # positive to steer right, negative to steer left
     """
@@ -22,7 +25,9 @@ def send_input(telemetry, steering, throttle):
     """
 
     # TODO: fix asap!!
-    curr_steering = telemetry["control_values"]["input"]["steer"]
+    user_inputs = UserInputs()
+    telemetry.update_telemetry(user_inputs)
+    curr_steering = user_inputs.steer
     steering_error = curr_steering - steering
     # print(f'{curr_steering} > {steering} ?')
     steer(steering_error * 400)  # magic number calculated through magic
