@@ -32,7 +32,7 @@ class CalcInput:
         self.steering_integral = 0
         self.throttle_integral = 0
 
-    def update_constants(
+    def set_constants(
         self,
         Kp_steering=None,
         Ki_steering=None,
@@ -122,10 +122,11 @@ class CalcInput:
         self.prev_throttle_error = throttle_error
         self.prev_timestamp_steering = telemetry["general_info"]["timestamp"]
         self.prev_timestamp_throttle = telemetry["general_info"]["timestamp"]
-
+        """
         print(
             f"P: {round(self.Kp_steering * steering_error, 3):.3f}, I: {round(self.Ki_steering * self.steering_integral, 5):.5f}, D: {round(self.Kd_steering * steering_derivative, 3):.3f}"
         )
+        """
         return steering, throttle
 
     def is_ninety_degree_turn(

@@ -31,7 +31,7 @@ WIN_WIDTH = 1921
 WIN_HEIGHT = 1120
 # offset to GPS window (in the bottom right)
 CROP_X = 1480
-CROP_Y = 747
+CROP_Y = 800
 # Homography from https://learnopencv.com/homography-examples-using-opencv-python-c/
 # Hardcoded points for homography :)
 PTS_SRC = np.array(
