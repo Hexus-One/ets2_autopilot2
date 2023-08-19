@@ -6,7 +6,7 @@ class GeneralInfo(AbstractDataClass):
     """Information about the game such if the SDK is active or game is paused"""
 
     sdk_active = False
-    game_paused = False
+    paused = False
     timestamp = 0
     simulated_timestamp = 0
     render_timestamp = 0
