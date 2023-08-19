@@ -102,7 +102,7 @@ class CalcInput:
 
     def convert_to_steering_output(steering_angle_radians):
         # Maximum steering angle in radians (corresponding to full lock)
-        max_steering_angle_degrees = 44.78692788
+        max_steering_angle_degrees = 38
         max_steering_angle_radians = math.radians(max_steering_angle_degrees)
 
         # Convert steering angle to the range of [-1, 1]
