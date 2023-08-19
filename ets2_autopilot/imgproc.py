@@ -101,13 +101,15 @@ def infer_polyline(im_src):
 
     for line in diagonals:
         cv2.line(im_out, line[0], line[1], MAGENTA)
-    for point in centreline:
-        cv2.drawMarker(im_out, point.astype(int), BLUE, cv2.MARKER_TILTED_CROSS, 5)
     # no clue why this is needed but yeah
     # taken from https://www.geeksforgeeks.org/python-opencv-cv2-polylines-method/
     centreline_np = np.array(centreline, np.int32)
     centreline_np = centreline_np.reshape((-1, 1, 2))
     cv2.polylines(im_out, [centreline_np], False, YELLOW)
+
+    for point in centreline:
+        cv2.drawMarker(im_out, point.astype(int), BLUE, cv2.MARKER_TILTED_CROSS, 1)
+
     if len(centreline) > 0:
         # offset so 0,0 is at truck centre
         centreline = np.subtract(centreline, TRUCK_CENTRE)
@@ -192,8 +194,43 @@ def contours_to_centreline(contours):
         else:
             # right is better
             curr_R = cand_R
-
+    centreline = filter_jagged(centreline, 100)
     return centreline, diagonals
+
+
+def filter_jagged(centreline: list, angle):
+    """Remove any corners in centreline with an angle > angle"""
+    # probably not efficient
+    # worst case O(n^2) if somehow every point gets removed
+
+    # loop through the whole list until there are no more points to remove
+    compliant = False
+    pts_removed = 0
+    while not compliant:
+        # iterate through list in triplets, remove middle if violating
+        compliant = True
+        for i in range(len(centreline) - 2):
+            if (
+                getAngleABC(centreline[i], centreline[i + 1], centreline[i + 2])
+                <= angle
+            ):
+                centreline.pop(i + 1)
+                pts_removed += 1
+                compliant = False
+                break
+    print(pts_removed)
+    return centreline
+
+
+# from https://manivannan-ai.medium.com/find-the-angle-between-three-points-from-2d-using-python-348c513e2cd
+def getAngleABC(a, b, c):
+    ba = a - b
+    bc = c - b
+
+    cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+    angle = np.arccos(cosine_angle)
+
+    return np.degrees(angle)
 
 
 # compares abc to abd using triangle_metric, returns TRUE if abc is better than abd
