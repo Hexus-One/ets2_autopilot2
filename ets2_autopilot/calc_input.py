@@ -100,10 +100,24 @@ class CalcInput:
         look_ahead_y_car = math.sin(-yaw) * dx + math.cos(-yaw) * dy
 
         # Calculate steering using geometry
-        steering = math.atan2(2 * wheelbase * look_ahead_y_car, look_ahead_distance**2)
+        # steering = math.atan2(2 * wheelbase * look_ahead_y_car, look_ahead_distance**2)
+        steering_angle = math.atan((tan_steering * axle_to_axle_length) / velocity)
+        steering_output = convert_to_steering_output(steering_angle)
 
-    return steering
+    return steering_output
 
+    def convert_to_steering_output(steering_angle_radians):
+        # Maximum steering angle in radians (corresponding to full lock)
+        max_steering_angle_degrees = 44.78692788
+        max_steering_angle_radians = math.radians(max_steering_angle_degrees)
+
+        # Convert steering angle to the range of [-1, 1]
+        steering_output = steering_angle_radians / max_steering_angle_radians
+
+        # Clamp the steering output to be within the range of [-1, 1]
+        steering_output = max(-1, min(1, steering_output))
+
+    return steering_output
 
     def is_ninety_degree_turn(self, centreline, severe_threshold=45, straight_threshold=15):
         filtered_centreline = self.filter_coordinates(centreline)
