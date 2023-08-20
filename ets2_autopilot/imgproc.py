@@ -90,10 +90,6 @@ def infer_polyline(im_src):
         contourf = contour.astype(np.float32)
         warped_cont = cv2.perspectiveTransform(contourf, HOMOGRAPHY)
         warped_contours.append(warped_cont.astype(int))
-    cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
-    for contour in warped_contours:
-        for [point] in contour:
-            cv2.drawMarker(im_out, point, BLUE, cv2.MARKER_TILTED_CROSS, 5)
 
     # abandoned thinning via centreline
     # takes too long (like 2-20fps in pure python)
@@ -101,6 +97,10 @@ def infer_polyline(im_src):
 
     for line in diagonals:
         cv2.line(im_out, line[0], line[1], MAGENTA)
+    cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
+    for contour in warped_contours:
+        for [point] in contour:
+            cv2.drawMarker(im_out, point, BLUE, cv2.MARKER_TILTED_CROSS, 5)
     # no clue why this is needed but yeah
     # taken from https://www.geeksforgeeks.org/python-opencv-cv2-polylines-method/
     centreline_np = np.array(centreline, np.int32)
@@ -130,9 +130,9 @@ def contours_to_centreline(contours):
 
     # obtain via triangulating the contour:
     # 1. find the contour the truck is inside
-    # 2. get the contour points to the left/right that are furthest up
+    # 2. get the contour points to the left/right that are closest to the truck
+    #     originally used lowest y coord but that got tripped up by some edge cases
     #     BUT below the truck, i.e. >= TRUCK_CENTRE.y
-    #     i.e. with lowest y-coord
     # 3. draw a line between them (imaginary) and mark centrepoint
     # 4. walk upwards and add diagonals that have the least skewed triangle
     #     and add centrepoints to list
@@ -152,18 +152,19 @@ def contours_to_centreline(contours):
     if start_contour is None:
         return centreline, diagonals
 
-    left_min = right_min = WIN_HEIGHT
+    left_min = right_min = float("inf")
     left_idx = right_idx = -1
     for idx, [point] in enumerate(start_contour):
         if point[1] < TRUCK_CENTRE[1]:  # only consider if below truck
             continue
+        dist = cv2.norm(point - TRUCK_CENTRE)
         if point[0] < TRUCK_CENTRE[0]:  # to the left
-            if point[1] < left_min:
-                left_min = point[1]
+            if dist < left_min:
+                left_min = dist
                 left_idx = idx
         else:  # to the right
-            if point[1] < right_min:
-                right_min = point[1]
+            if dist < right_min:
+                right_min = dist
                 right_idx = idx
 
     if left_idx == -1 or right_idx == -1:
@@ -194,12 +195,14 @@ def contours_to_centreline(contours):
         else:
             # right is better
             curr_R = cand_R
-    filter_jagged(centreline, 100)
+    # filter_jagged(centreline, 100)
     return centreline, diagonals
 
 
 def filter_jagged(centreline: list, angle):
-    """Remove any corners in centreline with an angle > angle"""
+    """Remove any corners in centreline with an angle < angle
+    
+    Intended use is to smooth out jagged points induced by green arrows from the image processing step"""
     # probably not efficient
     # worst case O(n^2) if somehow every point gets removed
 
