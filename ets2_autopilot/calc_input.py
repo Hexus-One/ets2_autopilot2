@@ -1,5 +1,5 @@
 import math
-
+import statistics
 
 class CalcInput:
     def __init__(
@@ -215,3 +215,57 @@ class CalcInput:
                     return True
 
         return False
+
+    def is_straight_road_or_gentle_curve(self, centreline, total_angle_threshold=150):
+        filtered_centreline = self.filter_coordinates(centreline) # If you use a filter in your main code
+        angles = []
+        for i in range(1, len(filtered_centreline) - 1):
+            x1, y1 = filtered_centreline[i - 1]
+            x2, y2 = filtered_centreline[i]
+            x3, y3 = filtered_centreline[i + 1]
+
+            vec1 = (x2 - x1, y2 - y1)
+            vec2 = (x3 - x2, y3 - y2)
+
+            mag1 = math.sqrt(vec1[0] ** 2 + vec1[1] ** 2)
+            mag2 = math.sqrt(vec2[0] ** 2 + vec2[1] ** 2)
+
+            dot_product = vec1[0] * vec2[0] + vec1[1] * vec2[1]
+            angle = math.degrees(math.acos(dot_product / (mag1 * mag2)))
+
+            angles.append(angle)
+
+        # Check if the total angle change is within the threshold
+        total_angle_change = sum(angles)
+        return total_angle_change < total_angle_threshold
+
+    def analyze_road(centreline, num_std_devs=2):
+        angles = []
+        for i in range(1, len(centreline) - 1):
+            x1, y1 = centreline[i - 1]
+            x2, y2 = centreline[i]
+            x3, y3 = centreline[i + 1]
+
+            vec1 = (x2 - x1, y2 - y1)
+            vec2 = (x3 - x2, y3 - y2)
+
+            mag1 = math.sqrt(vec1[0] ** 2 + vec1[1] ** 2)
+            mag2 = math.sqrt(vec2[0] ** 2 + vec2[1] ** 2)
+
+            dot_product = vec1[0] * vec2[0] + vec1[1] * vec2[1]
+            angle = math.degrees(math.acos(dot_product / (mag1 * mag2)))
+
+            angles.append(angle)
+
+        angle_changes = [abs(angles[i + 1] - angles[i]) for i in range(len(angles) - 1)]
+
+        mean_change = statistics.mean(angle_changes)
+        std_dev_change = statistics.stdev(angle_changes)
+
+        outliers = [change for change in angle_changes if abs(change - mean_change) > num_std_devs * std_dev_change]
+
+        is_gradual_curve = all(change < mean_change + num_std_devs * std_dev_change for change in angle_changes)
+        is_sudden_bend = len(outliers) > 0
+
+        return is_gradual_curve, is_sudden_bend
+
