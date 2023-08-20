@@ -133,6 +133,16 @@ class CalcInput:
         waypoints, look_ahead_distance, axle_to_axle_length
     ):  # waypoints is what centreline normally is
         # Find the look-ahead point
+
+        speed = # Obtain the speed value, assumed in km/h
+
+        if speed < 60:
+            look_ahead_distance = 10
+        elif speed < 110:
+            look_ahead_distance = 10 + (40 * (speed - 60) / (110 - 60))
+        else:
+            look_ahead_distance = 50
+
         min_distance = float("inf")
         look_ahead_x = look_ahead_y = None
         for wx, wy in waypoints:
@@ -143,7 +153,7 @@ class CalcInput:
                 break
 
         if look_ahead_x is None:
-            return 0  # No look-ahead point found; return 0 steering
+            return 0  # No look-ahead point found; return 0 steering probably not the best way to handle this.
 
         # Calculate steering using geometry
         # steering = math.atan2(2 * wheelbase * look_ahead_y_car, look_ahead_distance**2)
