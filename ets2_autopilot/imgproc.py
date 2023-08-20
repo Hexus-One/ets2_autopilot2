@@ -8,6 +8,7 @@ import numpy as np
 # hardcoded colours for drawing
 RED = (0, 0, 255)
 BLUE = (255, 0, 0)
+DARK_GREEN = (0, 127, 0)
 CYAN = (255, 255, 0)
 YELLOW = (0, 255, 255)
 MAGENTA = (255, 0, 255)
@@ -98,17 +99,22 @@ def infer_polyline(im_src):
     for line in diagonals:
         cv2.line(im_out, line[0], line[1], MAGENTA)
     cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
+    # draw contour points
     for contour in warped_contours:
         for [point] in contour:
-            cv2.drawMarker(im_out, point, BLUE, cv2.MARKER_TILTED_CROSS, 5)
+            cv2.drawMarker(im_out, point, BLUE, cv2.MARKER_TILTED_CROSS, 1)
     # no clue why this is needed but yeah
     # taken from https://www.geeksforgeeks.org/python-opencv-cv2-polylines-method/
     centreline_np = np.array(centreline, np.int32)
     centreline_np = centreline_np.reshape((-1, 1, 2))
+    # draw centreline
     cv2.polylines(im_out, [centreline_np], False, YELLOW)
 
+    # draw centreline points
     for point in centreline:
-        cv2.drawMarker(im_out, point.astype(int), BLUE, cv2.MARKER_TILTED_CROSS, 1)
+        cv2.drawMarker(
+            im_out, point.astype(int), DARK_GREEN, cv2.MARKER_TILTED_CROSS, 1
+        )
 
     if len(centreline) > 0:
         # offset so 0,0 is at truck centre
@@ -201,8 +207,9 @@ def contours_to_centreline(contours):
 
 def filter_jagged(centreline: list, angle):
     """Remove any corners in centreline with an angle < angle
-    
-    Intended use is to smooth out jagged points induced by green arrows from the image processing step"""
+
+    Intended use is to smooth out jagged points induced by green arrows from the image processing step
+    """
     # probably not efficient
     # worst case O(n^2) if somehow every point gets removed
 
