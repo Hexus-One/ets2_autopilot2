@@ -9,11 +9,20 @@ This mainly relies on the HUD GPS with an active route to determine the road ahe
 ## Development Status
 
 - [x] obtain a mask/outline of the route from the GPS
-- [ ] infer centreline of the route
+  - uses a simple binary thresholding of the GPS HUD from the bottom right corner (and thus won't work on right-hand drive trucks, where the GPS is on the opposite corner)
+  - it also gets confused by icons that show up on the map, e.g. highway labels, town names, company logos and most importantly the player icon
+    - because of this we use a Steam workshop mod to hide the player icon: [Player Map icon gone by Wolfpig](https://steamcommunity.com/sharedfiles/filedetails/?id=1210820173)
+    - later on we will remove this handicap and adapt the image processing to handle the player icon being in the way
+- [x] infer centreline of the route
+  - our algorithm gets tripped up by a lot of edge cases (mainly crossovers and roundabouts)
 - [x] obtain telemetry data from the game via SCS Telemetry
-- [ ] calculate steering angle required
-  - [ ] calculate max speed through route ahead
-- [ ] send input (steering/throttle/brake) to the game
+  - implemented in [ets2_telemetry](ets2_telemetry) with only necessary values fetch, but we may eventually grab the full set of data available.
+- [x] calculate steering angle required
+  - currently implements a Pure Pursuit Controller with a fixed look-ahead distance
+  - we are experimenting with different control systems to 
+- [ ] calculate max speed through route ahead
+- [x] send input (steering/throttle/brake) to the game
+  - uses keyboard throttle + mouse steering (at default 0.40/0.00 sensitivity) to control the truck
 
 ## Requirements
 
