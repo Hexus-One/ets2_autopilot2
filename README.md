@@ -65,7 +65,12 @@ config_lines[1]: "device mouse `sys.mouse`"
 ```
 pip install -r requirements.txt
 ```
-
+4. Clone [drufat's Triangle module](https://github.com/drufat/triangle) and build it from source. You may need the [triangle-c](https://github.com/drufat/triangle-c) submodule if your download doesn't include it already.
+```
+git clone --recurse-submodules https://github.com/drufat/triangle.git 
+cd triangle 
+pip install .
+```
 ### Running the program
 
 1. Launch Euro Truck Simulator 2.

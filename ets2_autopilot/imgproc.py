@@ -2,6 +2,7 @@
 # contains constants and functions for inferring centreline from an image
 import cv2
 import numpy as np
+import triangle as tr
 
 # from skimage.morphology import medial_axis
 
@@ -59,8 +60,8 @@ def infer_polyline(im_src):
     comb_mask = cv2.bitwise_or(green_mask, red_mask)
     # remove holes caused by player truck icon
     comb_mask = cv2.morphologyEx(comb_mask, cv2.MORPH_CLOSE, KERNEL5)
-    # remove single-pixel outliers such eg false positives from the speed limit
-    comb_mask = cv2.morphologyEx(comb_mask, cv2.MORPH_OPEN, KERNEL3)
+    # don't use morph_open with 3x3 kernel as it eliminates 1-pixel lines near top of image
+    # we'd rather deal with single-pixel dots from speed limit signs
     # comb_mask_inv = cv2.bitwise_not(comb_mask)
     # im_src = cv2.bitwise_and(im_src, im_src, mask=comb_mask_inv)
     im_out = cv2.warpPerspective(
@@ -98,8 +99,8 @@ def infer_polyline(im_src):
     centreline, diagonals = contours_to_centreline(warped_contours, heirarchy)
 
     for line in diagonals:
-        cv2.line(im_out, line[0], line[1], MAGENTA)
-    cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
+        cv2.line(im_out, line[0].astype(int), line[1].astype(int), MAGENTA)
+    # cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
     # draw contour points
     for contour in warped_contours:
         for [point] in contour:
@@ -137,86 +138,88 @@ def contours_to_centreline(contours, heirarchy):
 
     # obtain via triangulating the contour:
     # 1. find the contour the truck is inside
-    # 2. get the contour points to the left/right that are closest to the truck
-    #     originally used lowest y coord but that got tripped up by some edge cases
-    #     BUT below the truck, i.e. >= TRUCK_CENTRE.y
-    # 3. draw a line between them (imaginary) and mark centrepoint
-    # 4. walk upwards and add diagonals that have the least skewed triangle
-    #     and add centrepoints to list
-    # 5. proceed until ??
+    # 2. use Constrained Delaunay Triangulation to obtain the diagonals
+    # 3. draw points on the midpoint of every diagonal
+    # 4. link points of diagonals between adjacent triangles to obtain ordering
+    #  a. resolve crossovers by the following:
+    #
+    # 5. use green arrows to determine forward/reverse direction
 
     # 1. find containing contour
+    start_idx = None
     start_contour = None
-    for contour in contours:
+    for idx, contour in enumerate(contours):
         if cv2.pointPolygonTest(contour, TRUCK_CENTRE, measureDist=False) == 1:
-            start_contour = contour
+            start_idx, start_contour = idx, contour
             break
-    if start_contour is None:
-        return centreline, diagonals
-
     # check contour thickness (area:perimeter ratio) to determine if we're at the correct map zoom
     # for 1920x1080 window, thickness is ~20 zoomed in and ~10 zoomed out
     # arbitrary threshold here, probably need to scale to screen size later
-    if contour_thickness(start_contour) < 15:
+    if start_contour is None or contour_thickness(start_contour) < 15:
         return centreline, diagonals
 
-    # 2. get left/right contour points to start
-    # might need to change this algo a bit, for some edge cases
-    # reminder: coordinate format is (x,y) -> [0,1]
-    left_min = right_min = float("inf")
-    left_idx = right_idx = -1
-    for idx, [point] in enumerate(start_contour):
-        if point[1] < TRUCK_CENTRE[1]:  # only consider if below truck
-            continue
-        dist = cv2.norm(point - TRUCK_CENTRE)
-        if point[0] < TRUCK_CENTRE[0]:  # to the left
-            if dist < left_min:
-                left_min = dist
-                left_idx = idx
-        else:  # to the right
-            if dist < right_min:
-                right_min = dist
-                right_idx = idx
+    # convert contour into a format suitable for Triangle package
+    contour_tr = contourcv2_to_tr(start_idx, contours, heirarchy)
+    triangulation = tr.triangulate(contour_tr, "pne")
+    # convert triangles to diagonals
+    N = len(start_contour)
+    for triangle in triangulation["triangles"]:
+        # add each side of the triangle to the diagonals
+        for a, b in ((0, 1), (1, 2), (2, 0)):
+            idx_a, idx_b = triangle[a], triangle[b]
+            # don't add triangle side if its identical to an existing segment
+            # modulo N-2 to handle segments connecting first-last point
+            # if abs(idx_a - idx_b) % (N - 2) == 1:
+            #     continue
+            diagonals.append(
+                (
+                    triangulation["vertices"][idx_a],
+                    triangulation["vertices"][idx_b],
+                )
+            )
 
-    if left_idx == -1 or right_idx == -1:
-        return centreline, diagonals
-
-    # starting points found, we can continue
-    # otherwise we're probably outside the line
-
-    # 3/4/5 do the walking thing
-    # as far as I know, contours go clockwise (at least the top-level
-    # ones do) so we walk forwards for left, and backwards for right
-    #   turns out its the opposite?? no clue why
-    curr_L, curr_R = left_idx, right_idx
-    while True:
-        centre = (start_contour[curr_L][0] + start_contour[curr_R][0]) / 2
-        centreline.append(centre)
-        diagonals.append((start_contour[curr_L][0], start_contour[curr_R][0]))
-        # two candidates for triangles
-        cand_L = (curr_L - 1) % len(start_contour)
-        cand_R = (curr_R + 1) % len(start_contour)
-        # I guess we stop if we've looped around the contour?
-        if cand_R == curr_L or cand_L == curr_R:
-            break
-        # compare the two triangles and add the "better" diagonal (metric TBD)
-        if compare_triangles(curr_L, curr_R, cand_L, cand_R, start_contour):
-            # left diagonal better
-            curr_L = cand_L
-        else:
-            # right is better
-            curr_R = cand_R
     # filter_jagged(centreline, 100)
     return centreline, diagonals
 
 
 def contour_thickness(contour):
     """Get the thickness of a curvilinear contour.
-    
+
     Works best with long, windy shapes"""
     area = cv2.contourArea(contour)
     perimeter = cv2.arcLength(contour, True)
     return area / perimeter
+
+
+def contourcv2_to_tr(contour_idx, contours, heirarchy):
+    """Convert an OpenCV contour and its children to Triangle data format"""
+    # In our application there should be only two children of a top-level contour at most
+    # see tests/data/double_crossover.png
+    N = len(contours[contour_idx])
+    # create vertices and segments for top-level contour
+    vertices = np.reshape(contours[contour_idx], (-1, 2))
+    i = np.arange(N)
+    segments = np.stack([i, i + 1], axis=1) % N
+    # holes needs to have at least one element or it crashes :)
+    # get the bounding rectangle and choose a point outside to guaruntee normal operation
+    x, *_ = cv2.boundingRect(contours[contour_idx])
+    holes = [[x - 1, 0]]
+    # iterate through children using the heirarchy table and append them
+    # TODO: there's probably a more pythonic way to do this
+    child_idx = heirarchy[0][contour_idx][2]
+    while child_idx != -1:
+        N = len(contours[child_idx])
+        child_verts = np.reshape(contours[child_idx], (-1, 2))
+        vertices = np.vstack([vertices, child_verts])
+        i = np.arange(N)
+        child_segments = np.stack([i, i + 1], axis=1) % N
+        segments = np.vstack([segments, child_segments + len(segments)])
+        # use the middle of the bounding rectangle as hole location (should work in every case)
+        x, y, w, h = cv2.boundingRect(contours[child_idx])
+        holes.append([x + w / 2, y + h / 2])
+        child_idx = heirarchy[0][child_idx][0]  # fetch the next child
+
+    return dict(vertices=vertices, segments=segments, holes=holes)
 
 
 def filter_jagged(centreline: list, angle):
@@ -224,6 +227,7 @@ def filter_jagged(centreline: list, angle):
 
     Intended use is to smooth out jagged points induced by green arrows from the image processing step
     """
+    # TODO: something is wrong with this I'm pretty sure
     # probably not efficient
     # worst case O(n^2) if somehow every point gets removed
 
