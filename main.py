@@ -72,7 +72,7 @@ if __name__ == "__main__":
                     send_input(telemetry, steering, 0)
             elapsed = time.time() - last_time
             fps = 1 / elapsed
-            print(f"FPS: {round(fps, 2)}" + "-" * round(fps / 10))
+            print(f"FPS: {round(fps, 2):06.2f}" + "-" * round(fps / 10))
             last_time = time.time()
             # Press "q" to quit
             if cv2.waitKey(1) & 0xFF == ord("q"):

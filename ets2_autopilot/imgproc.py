@@ -100,7 +100,7 @@ def infer_polyline(im_src):
 
     for line in diagonals:
         cv2.line(im_out, line[0].astype(int), line[1].astype(int), MAGENTA)
-    # cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
+    cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
     # draw contour points
     for contour in warped_contours:
         for [point] in contour:
@@ -161,25 +161,26 @@ def contours_to_centreline(contours, heirarchy):
     # convert contour into a format suitable for Triangle package
     contour_tr = contourcv2_to_tr(start_idx, contours, heirarchy)
     triangulation = tr.triangulate(contour_tr, "pne")
-    # convert triangles to diagonals
-    N = len(start_contour)
-    for triangle in triangulation["triangles"]:
-        # add each side of the triangle to the diagonals
-        for a, b in ((0, 1), (1, 2), (2, 0)):
-            idx_a, idx_b = triangle[a], triangle[b]
-            # don't add triangle side if its identical to an existing segment
-            # modulo N-2 to handle segments connecting first-last point
-            # if abs(idx_a - idx_b) % (N - 2) == 1:
-            #     continue
-            diagonals.append(
-                (
-                    triangulation["vertices"][idx_a],
-                    triangulation["vertices"][idx_b],
-                )
+    # obtain only the diagonals by concatenating edges and segments, then eliminating duplicates
+    edges = np.sort(triangulation["edges"])
+    segments = np.sort(triangulation["segments"])
+    for edge in setdiff2d_bc(edges, segments):
+        diagonals.append(
+            (
+                triangulation["vertices"][edge[0]],
+                triangulation["vertices"][edge[1]],
             )
-
+        )
     # filter_jagged(centreline, 100)
     return centreline, diagonals
+
+
+def setdiff2d_bc(arr1, arr2):
+    """Set difference of two arrays, i.e. arr1 - arr2
+
+    From https://stackoverflow.com/a/66674679"""
+    idx = (arr1[:, None] != arr2).any(-1).all(1)
+    return arr1[idx]
 
 
 def contour_thickness(contour):
