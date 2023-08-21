@@ -79,7 +79,7 @@ The program will open three preview windows to show the 1. screenshot area 2. ma
 - there is a destination set (i.e. a red line is visible in the GPS display).
 - the truck icon in the GPS display is on top of the red navigation line
 
-To stop the auto-steer, you can break one of these conditions, e.g. alt-tab out of the game, pause the game or hide the GPS by changing the Route Advisor to another page. The last method is the only way to manually steer the truck while the program is running.
+To stop the auto-steer, you can break one of these conditions, e.g. alt-tab out of the game, pause the game, change the GPS zoom, or hide the GPS by changing the Route Advisor to another page. The last two methods allow you to manually steer the truck while the program is running.
 
 ## Contributing
 
