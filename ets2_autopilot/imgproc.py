@@ -8,6 +8,7 @@ import numpy as np
 # hardcoded colours for drawing
 RED = (0, 0, 255)
 BLUE = (255, 0, 0)
+DARK_GREEN = (0, 127, 0)
 CYAN = (255, 255, 0)
 YELLOW = (0, 255, 255)
 MAGENTA = (255, 0, 255)
@@ -20,8 +21,9 @@ GREEN_MAX = (28, 251, 97, 255)
 RED_MIN = (11, 11, 194, 255)
 RED_MAX = (42, 42, 207, 255)
 
-# for morphology closing to remove driver icon from GPS
-KERNEL = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+# for morphological operations e.g. closing to remove driver icon from GPS
+KERNEL3 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+KERNEL5 = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
 
 # window size of 1920x1080 ETS2 windowed
 # TODO: adapt to fullscreen or diff window sizes
@@ -49,28 +51,28 @@ HOMOGRAPHY, status = cv2.findHomography(PTS_SRC, PTS_DST)
 
 
 def infer_polyline(im_src):
+    """Takes an image from the GPS HUD and returns the centreline of the route."""
     # masking and warping to obtain top-down view of route
+    # binary threshold of the red and green pixels
     green_mask = cv2.inRange(im_src, GREEN_MIN, GREEN_MAX)
     red_mask = cv2.inRange(im_src, RED_MIN, RED_MAX)
     comb_mask = cv2.bitwise_or(green_mask, red_mask)
-    comb_mask = cv2.morphologyEx(comb_mask, cv2.MORPH_CLOSE, KERNEL)
-    comb_mask_inv = cv2.bitwise_not(comb_mask)
-    im_tmp3 = cv2.bitwise_and(im_src, im_src, mask=comb_mask_inv)
+    # remove holes caused by player truck icon
+    comb_mask = cv2.morphologyEx(comb_mask, cv2.MORPH_CLOSE, KERNEL5)
+    # remove single-pixel outliers such eg false positives from the speed limit
+    comb_mask = cv2.morphologyEx(comb_mask, cv2.MORPH_OPEN, KERNEL3)
+    # comb_mask_inv = cv2.bitwise_not(comb_mask)
+    # im_src = cv2.bitwise_and(im_src, im_src, mask=comb_mask_inv)
     im_out = cv2.warpPerspective(
         im_src, HOMOGRAPHY, (WIN_WIDTH, WIN_HEIGHT), flags=cv2.INTER_NEAREST
     )
-    # thinned = cv2.ximgproc.thinning(comb_mask)
-    # thin_warp = cv2.warpPerspective(thinned, h, (WIN_WIDTH, WIN_HEIGHT), flags=cv2.INTER_NEAREST)
-    # thin_warp = cv2.cvtColor(thin_warp, cv2.COLOR_GRAY2BGRA)
-    # im_out = cv2.bitwise_or(im_out, thin_warp)
-    # comb_mask = cv2.GaussianBlur(comb_mask, (5, 5), 0)
+
     # get contours of path
     contours, heirarchy = cv2.findContours(
         comb_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS
     )
 
-    # approximation not needed, I can't seem to tune it
-    # to a nice value
+    # approximation not needed, I can't seem to tune it to a nice value
     """
     approx = []
     for contour in contours:
@@ -85,30 +87,35 @@ def infer_polyline(im_src):
     warped_contours = []
     for contour in contours:
         # discard degenerate contours that probably don't represent road
-        if contour.size < 5:
-            continue
+        # if contour.size < 5:
+        #     continue
         contourf = contour.astype(np.float32)
         warped_cont = cv2.perspectiveTransform(contourf, HOMOGRAPHY)
         warped_contours.append(warped_cont.astype(int))
-    cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
-    for contour in warped_contours:
-        for [point] in contour:
-            cv2.drawMarker(im_out, point, BLUE, cv2.MARKER_TILTED_CROSS, 5)
 
     # abandoned thinning via centreline
     # takes too long (like 2-20fps in pure python)
-    centreline, diagonals = contours_to_centreline(warped_contours)
+    centreline, diagonals = contours_to_centreline(warped_contours, heirarchy)
 
     for line in diagonals:
         cv2.line(im_out, line[0], line[1], MAGENTA)
+    cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
+    # draw contour points
+    for contour in warped_contours:
+        for [point] in contour:
+            cv2.drawMarker(im_out, point, BLUE, cv2.MARKER_TILTED_CROSS, 1)
     # no clue why this is needed but yeah
     # taken from https://www.geeksforgeeks.org/python-opencv-cv2-polylines-method/
     centreline_np = np.array(centreline, np.int32)
     centreline_np = centreline_np.reshape((-1, 1, 2))
+    # draw centreline
     cv2.polylines(im_out, [centreline_np], False, YELLOW)
 
+    # draw centreline points
     for point in centreline:
-        cv2.drawMarker(im_out, point.astype(int), BLUE, cv2.MARKER_TILTED_CROSS, 1)
+        cv2.drawMarker(
+            im_out, point.astype(int), DARK_GREEN, cv2.MARKER_TILTED_CROSS, 1
+        )
 
     if len(centreline) > 0:
         # offset so 0,0 is at truck centre
@@ -124,15 +131,15 @@ def infer_polyline(im_src):
     return centreline, im_out
 
 
-def contours_to_centreline(contours):
+def contours_to_centreline(contours, heirarchy):
     centreline = []  # list of points on centre
     diagonals = []  # list of pairs of points of diagonals (for debug)
 
     # obtain via triangulating the contour:
     # 1. find the contour the truck is inside
-    # 2. get the contour points to the left/right that are furthest up
+    # 2. get the contour points to the left/right that are closest to the truck
+    #     originally used lowest y coord but that got tripped up by some edge cases
     #     BUT below the truck, i.e. >= TRUCK_CENTRE.y
-    #     i.e. with lowest y-coord
     # 3. draw a line between them (imaginary) and mark centrepoint
     # 4. walk upwards and add diagonals that have the least skewed triangle
     #     and add centrepoints to list
@@ -144,26 +151,31 @@ def contours_to_centreline(contours):
         if cv2.pointPolygonTest(contour, TRUCK_CENTRE, measureDist=False) == 1:
             start_contour = contour
             break
+    if start_contour is None:
+        return centreline, diagonals
+
+    # check contour thickness (area:perimeter ratio) to determine if we're at the correct map zoom
+    # for 1920x1080 window, thickness is ~20 zoomed in and ~10 zoomed out
+    # arbitrary threshold here, probably need to scale to screen size later
+    if contour_thickness(start_contour) < 15:
+        return centreline, diagonals
 
     # 2. get left/right contour points to start
     # might need to change this algo a bit, for some edge cases
     # reminder: coordinate format is (x,y) -> [0,1]
-
-    if start_contour is None:
-        return centreline, diagonals
-
-    left_min = right_min = WIN_HEIGHT
+    left_min = right_min = float("inf")
     left_idx = right_idx = -1
     for idx, [point] in enumerate(start_contour):
         if point[1] < TRUCK_CENTRE[1]:  # only consider if below truck
             continue
+        dist = cv2.norm(point - TRUCK_CENTRE)
         if point[0] < TRUCK_CENTRE[0]:  # to the left
-            if point[1] < left_min:
-                left_min = point[1]
+            if dist < left_min:
+                left_min = dist
                 left_idx = idx
         else:  # to the right
-            if point[1] < right_min:
-                right_min = point[1]
+            if dist < right_min:
+                right_min = dist
                 right_idx = idx
 
     if left_idx == -1 or right_idx == -1:
@@ -194,12 +206,24 @@ def contours_to_centreline(contours):
         else:
             # right is better
             curr_R = cand_R
-    filter_jagged(centreline, 100)
+    # filter_jagged(centreline, 100)
     return centreline, diagonals
 
 
+def contour_thickness(contour):
+    """Get the thickness of a curvilinear contour.
+    
+    Works best with long, windy shapes"""
+    area = cv2.contourArea(contour)
+    perimeter = cv2.arcLength(contour, True)
+    return area / perimeter
+
+
 def filter_jagged(centreline: list, angle):
-    """Remove any corners in centreline with an angle > angle"""
+    """Remove any corners in centreline with an angle < angle
+
+    Intended use is to smooth out jagged points induced by green arrows from the image processing step
+    """
     # probably not efficient
     # worst case O(n^2) if somehow every point gets removed
 

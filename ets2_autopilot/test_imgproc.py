@@ -17,6 +17,14 @@ def test_imgproc():
     if platform == "win32":
         errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
+    # create a folder if it doesn't already exist
+    try:
+        os.mkdir(OUTPUT)
+    except FileExistsError:
+        pass
+
+    # loop through images and process one at a time
+    # TODO: refactor this test as a function that operates on one image
     for filename in os.listdir(FOLDER):
         fullpath = os.path.join(FOLDER, filename)
         print(f"Opening {fullpath}")
