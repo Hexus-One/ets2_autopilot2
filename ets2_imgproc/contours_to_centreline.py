@@ -16,7 +16,6 @@ def contours_to_centreline(contours, heirarchy):
     centreline = []  # list of points on centre
     diagonals = []  # list of pairs of points of diagonals (for debug)
     # centreline obtained via triangulating the contour:
-    # 0. maintain a list of headings and weights (i.e. lengths)
     # 1. find the contour the truck is inside
     # 2. use Constrained Delaunay Triangulation (CDT) to obtain the diagonals
     # 3. find the containing triangle (hopefully there's just one)
@@ -45,7 +44,6 @@ def contours_to_centreline(contours, heirarchy):
     contour_tr = contourcv2_to_tr(start_contour_idx, contours, heirarchy)
     triangulation = tr.triangulate(contour_tr, "pne")
     # centreline via greedy walk through triangles
-    headings = [(-90, 20)]  # (heading(deg), length), including initial direction
     triangle_idx = get_containing_triangle(TRUCK_CENTRE, triangulation)
     prev_tri_idx = triangle_idx  # for iteration
     normals = get_triangle_normals(triangle_idx, triangulation)
@@ -79,29 +77,49 @@ def contours_to_centreline(contours, heirarchy):
                 triangle_idx = -1
         case 2:  # Sleeve triangle
             # add midpoints of the two edges, use heading to determine direction
-            neighbours = np.nonzero(triangulation["neighbors"][triangle_idx] != -1)[0]
+            borders = np.nonzero(triangulation["neighbors"][triangle_idx] != -1)[0]
             # figure out which side is front/back
-            # BUG: something is messing up here
-            # are triangle vertices always clockwise?
-            fwd = neighbours[np.argmin(np.abs(normals[neighbours]))]
-            bck = neighbours[np.argmax(np.abs(normals[neighbours]))]
+            fwd = borders[np.argmin(np.abs(normals[borders]))]
+            bck = borders[np.argmax(np.abs(normals[borders]))]
             second = get_midpoint(fwd, triangle_idx, triangulation)
             first = get_midpoint(bck, triangle_idx, triangulation)
             centreline = [first, second]
             triangle_idx = triangulation["neighbors"][triangle_idx][fwd]
         case 3:  # Junction triangle
-            # similar to sleeve but use the two edges that face the most towards
-            # the truck, i.e. exclude the "side" edge
-            pass
+            # similar to sleeve but use the two edges that face the most towards/
+            # away from the truck, i.e. exclude the "side" edge
+            fwd = np.argmin(np.abs(normals))
+            bck = np.argmax(np.abs(normals))
+            second = get_midpoint(fwd, triangle_idx, triangulation)
+            first = get_midpoint(bck, triangle_idx, triangulation)
+            centreline = [first, second]
+            triangle_idx = triangulation["neighbors"][triangle_idx][fwd]
+    # squeeze in an initial point, to intentionally skew the heading calc and
+    # bias it towards initial direction (in case we start in the middle of an
+    # intersection). Weight is chosen arbitrarily - need to tune so that we
+    # choose the correct side at junctions.
+    if len(centreline) == 0:
+        centreline.append(np.array([0, 20]))
+    else:
+        centreline.insert(0, centreline[0] + (0, 20))
     # iterate thru triangles until terminal
-    while triangle_idx != -1:
+    while triangle_idx != -1:  # only really fires if we start on terminal
         normals = get_triangle_normals(triangle_idx, triangulation)
         match count_neighbours(triangle_idx, triangulation):
             case 0:  # Isolated triangle
                 break  # Escape and just return an empty centreline
             case 1:  # Terminal triangle
                 # add midpoint of border edge with closest heading
-                break
+                tri_neighbours_idx = triangulation["neighbors"][triangle_idx]
+                borders = np.nonzero(tri_neighbours_idx == -1)[0]
+                heading = get_average_heading(centreline, 5)
+                # I'm just guessing this abs(unwrap) stuff, untested :)
+                heading_diffs = np.abs(
+                    np.unwrap([normals[borders] - heading], period=360)
+                )
+                border = borders[np.argmin(heading_diffs)]
+                centreline.append(get_midpoint(border, triangle_idx, triangulation))
+                break  # can use triangle_idx = -1 as well
             case 2:  # Sleeve triangle
                 # add the next point
                 neighbour = np.nonzero(  # more funny unpacking
@@ -115,14 +133,20 @@ def contours_to_centreline(contours, heirarchy):
                 triangle_idx = triangulation["neighbors"][triangle_idx][neighbour]
             case 3:  # Junction triangle
                 # use weighted heading to determine which triangle to choose
-                break
+                # kinda similar to terminal triangle
+                # TODO: tune the metric, its breaking on double_crossover.png
+                tri_neighbours_idx = triangulation["neighbors"][triangle_idx]
+                candidates = np.nonzero(tri_neighbours_idx != prev_tri_idx)[0]
+                heading = get_average_heading(centreline, 5)
+                heading_diffs = np.abs(
+                    np.unwrap([normals[candidates] - heading], period=360)
+                )
+                best = candidates[np.argmin(heading_diffs)]
+                centreline.append(get_midpoint(best, triangle_idx, triangulation))
+                prev_tri_idx = triangle_idx
+                triangle_idx = triangulation["neighbors"][triangle_idx][best]
         # might need something to protect against circular loops like a length
         # check.
-        if len(centreline) >= 2:  # update headings
-            segment = centreline[-1] - centreline[-2]
-            heading = np.degrees(np.arctan2(*np.flip(segment)))
-            weight = cv2.norm(segment)  # could also use
-            headings.append((heading, weight))
 
     # diagonals might not be needed at all, just for debug display
     # obtain only the diagonals via set difference
@@ -187,6 +211,16 @@ def get_midpoint(
     vertex_indices = np.delete(triangulation["triangles"][triangle_idx], vertex_idx, 0)
     vertices = triangulation["vertices"][vertex_indices]
     return np.mean(vertices, 0)
+
+
+def get_average_heading(centreline: list[float], num: int) -> float:
+    """Get the average heading of the last num points.
+
+    Equivalent to the heading between [-1] and [-num]."""
+    num = min(num, len(centreline))  # in case num is longer than the list
+    offset = centreline[-1] - centreline[-num]
+    heading = np.unwrap([np.degrees(np.arctan2(*np.flip(offset))) + 90], period=360)
+    return heading
 
 
 def get_containing_triangle(point: tuple[float, float], triangulation: dict) -> int:
