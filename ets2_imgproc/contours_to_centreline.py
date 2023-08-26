@@ -44,10 +44,14 @@ def contours_to_centreline(contours, heirarchy):
     # convert contour into a format suitable for Triangle package
     contour_tr = contourcv2_to_tr(start_contour_idx, contours, heirarchy)
     triangulation = tr.triangulate(contour_tr, "pne")
+    tri_by_verts = triangulation["vertices"][triangulation["triangles"]]
+    angles = []
+    for triangle in tri_by_verts:
+        angles.append(get_tri_angles_atan2(triangle))
     # centreline via greedy walk through triangles
-    headings = [(0, 20)]  # (heading(deg), length), including initial direction
+    headings = [(-90, 20)]  # (heading(deg), length), including initial direction
     triangle_idx = get_containing_triangle(TRUCK_CENTRE, triangulation)
-    prev_tri_idx = triangle_idx # for iteration
+    prev_tri_idx = triangle_idx  # for iteration
     normals = get_triangle_normals(triangle_idx, triangulation)
     match count_neighbours(triangle_idx, triangulation):
         case 0:  # Isolated triangle
@@ -59,7 +63,8 @@ def contours_to_centreline(contours, heirarchy):
             # depending on heading.
             # for neighbours [A, B, C], neighbour A shares vertices BC with
             # the current triangle.
-            neighbour = np.nonzero(triangulation["neighbors"][triangle_idx] != -1)
+            # funny unpacking required to get int out of (array([]))
+            neighbour = np.nonzero(triangulation["neighbors"][triangle_idx] != -1)[0][0]
             midpoint_neighbour = get_midpoint(neighbour, triangle_idx, triangulation)
             # two cases for forwards- and backwards- facing terminal triangle
             # get the opposite edge (facing most backwards/fowards respectively)
@@ -78,13 +83,22 @@ def contours_to_centreline(contours, heirarchy):
                 triangle_idx = -1
         case 2:  # Sleeve triangle
             # add midpoints of the two edges, use heading to determine direction
-            pass
+            neighbours = np.nonzero(triangulation["neighbors"][triangle_idx] != -1)[0]
+            # figure out which side is front/back
+            # BUG: something is messing up here
+            # are triangle vertices always clockwise?
+            fwd = neighbours[np.argmin(normals[neighbours])]
+            bck = neighbours[np.argmax(normals[neighbours])]
+            second = get_midpoint(fwd, triangle_idx, triangulation)
+            first = get_midpoint(bck, triangle_idx, triangulation)
+            centreline = [first, second]
+            triangle_idx = triangulation["neighbors"][triangle_idx][fwd]
         case 3:  # Junction triangle
             # similar to sleeve but use the two edges that face the most towards
             # the truck, i.e. exclude the "side" edge
             pass
     # iterate thru triangles until terminal
-    while triangle_idx == -1:
+    while triangle_idx != -1:
         normals = get_triangle_normals(triangle_idx, triangulation)
         match count_neighbours(triangle_idx, triangulation):
             case 0:  # Isolated triangle
@@ -94,11 +108,25 @@ def contours_to_centreline(contours, heirarchy):
                 break
             case 2:  # Sleeve triangle
                 # add the next point
-                pass
+                neighbour = np.nonzero(  # more funny unpacking
+                    np.logical_and(
+                        triangulation["neighbors"][triangle_idx] != -1,
+                        triangulation["neighbors"][triangle_idx] != prev_tri_idx,
+                    )
+                )[0][0]
+                centreline.append(get_midpoint(neighbour, triangle_idx, triangulation))
+                prev_tri_idx = triangle_idx
+                triangle_idx = triangulation["neighbors"][triangle_idx][neighbour]
             case 3:  # Junction triangle
                 # use weighted heading to determine which triangle to choose
-                pass
-        # might need something to protect against circular loops
+                break
+        # might need something to protect against circular loops like a length
+        # check.
+        if len(centreline) >= 2:  # update headings
+            segment = centreline[-1] - centreline[-2]
+            heading = np.degrees(np.arctan2(*np.flip(segment)))
+            weight = cv2.norm(segment)  # could also use
+            headings.append((heading, weight))
 
     # diagonals might not be needed at all, just for debug display
     # obtain only the diagonals via set difference
@@ -138,6 +166,18 @@ def get_triangle_normals(idx: int, triangulation: dict) -> list[float, float, fl
     offsets = np.flipud(np.transpose(offsets))  # reshape for atan2
     normals = np.degrees(np.arctan2(*offsets))
     return normals
+
+
+def get_tri_angles_atan2(triangle: list[float, float, float]) -> float:
+    """Get angle at b using np.atan2
+
+    Output in degrees."""
+    points_rolled = np.roll(triangle, -1, 0)
+    points_rolled2 = np.roll(triangle, 1, 0)
+    lines = points_rolled2 - points_rolled
+    headings = np.arctan2(*np.flipud(np.transpose(lines)))
+    headings_rolled = np.roll(headings, 1, 0)
+    return np.degrees(np.unwrap(headings - headings_rolled))
 
 
 def get_midpoint(
@@ -247,8 +287,10 @@ def filter_jagged(centreline: list, angle):
     return centreline
 
 
-def getAngleABC(a, b, c):
-    """From https://manivannan-ai.medium.com/find-the-angle-between-three-points-from-2d-using-python-348c513e2cd"""
+def getAngleABC(a, b, c) -> float:
+    """From https://manivannan-ai.medium.com/find-the-angle-between-three-points-from-2d-using-python-348c513e2cd
+
+    Output in degrees."""
     # numpy implementation is slightly slower than maths :)
     ba = a - b
     bc = c - b
