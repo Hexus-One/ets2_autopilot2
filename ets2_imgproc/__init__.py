@@ -29,13 +29,6 @@ def infer_polyline(im_src):
     contours, heirarchy = cv2.findContours(
         comb_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS
     )
-    # approximation not needed, I can't seem to tune it to a nice value
-    """
-    approx = []
-    for contour in contours:
-        epsilon = 0.001 * cv2.arcLength(contour, True)
-        approx.append(cv2.approxPolyDP(contour, epsilon, True))
-    # """
     # draw on og HUD
     comb_mask = cv2.cvtColor(comb_mask, cv2.COLOR_GRAY2BGRA)
     cv2.drawContours(comb_mask, contours, -1, RED, 1)
@@ -45,7 +38,7 @@ def infer_polyline(im_src):
     for contour in contours:
         contourf = contour.astype(np.float32)
         warped_cont = cv2.perspectiveTransform(contourf, HOMOGRAPHY)
-        warped_contours.append(warped_cont.astype(int))
+        warped_contours.append(warped_cont)
 
     # magic happens here :)
     centreline, diagonals = contours_to_centreline(warped_contours, heirarchy)
@@ -53,8 +46,12 @@ def infer_polyline(im_src):
     # a heap of debug drawing
     for line in diagonals:
         cv2.line(im_out, line[0].astype(int), line[1].astype(int), MAGENTA)
-    cv2.drawContours(im_out, warped_contours, -1, CYAN, 1)
-    for contour in warped_contours:  # draw contour points
+    debug_contours = []
+    for contour in warped_contours:
+        contouri = contour.astype(int)
+        debug_contours.append(contouri)
+    cv2.drawContours(im_out, debug_contours, -1, CYAN, 1)
+    for contour in debug_contours:  # draw contour points
         for [point] in contour:
             cv2.drawMarker(im_out, point, BLUE, cv2.MARKER_TILTED_CROSS, 1)
     # no clue why this conversion is needed but yeah
