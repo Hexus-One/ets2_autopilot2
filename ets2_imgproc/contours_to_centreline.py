@@ -37,7 +37,7 @@ def contours_to_centreline(contours, heirarchy):
     # the correct map zoom.
     # for 1920x1080 window, thickness is ~20 zoomed in and ~10 zoomed out
     # arbitrary threshold here, probably need to scale to screen size later
-    if start_contour is None or contour_thickness(start_contour) < 15:
+    if start_contour is None or contour_thickness(start_contour) < 12:
         return centreline, diagonals
 
     # convert contour into a format suitable for Triangle package
@@ -103,7 +103,8 @@ def contours_to_centreline(contours, heirarchy):
     else:
         centreline.insert(0, centreline[0] + (0, 20))
     # iterate thru triangles until terminal
-    while triangle_idx != -1:  # only really fires if we start on terminal
+    # also limit max centreline length to avoid loopbacks
+    while triangle_idx != -1:  # and len(centreline) < len(triangulation["triangles"]):
         normals = get_triangle_normals(triangle_idx, triangulation)
         match count_neighbours(triangle_idx, triangulation):
             case 0:  # Isolated triangle
@@ -128,7 +129,11 @@ def contours_to_centreline(contours, heirarchy):
                         triangulation["neighbors"][triangle_idx] != prev_tri_idx,
                     )
                 )[0][0]
-                centreline.append(get_midpoint(neighbour, triangle_idx, triangulation))
+                midpoint = get_midpoint(neighbour, triangle_idx, triangulation)
+                # avoid loopbacks
+                if np.any(np.logical_and(*np.transpose(midpoint == centreline))):
+                    break
+                centreline.append(midpoint)
                 prev_tri_idx = triangle_idx
                 triangle_idx = triangulation["neighbors"][triangle_idx][neighbour]
             case 3:  # Junction triangle
@@ -145,8 +150,6 @@ def contours_to_centreline(contours, heirarchy):
                 centreline.append(get_midpoint(best, triangle_idx, triangulation))
                 prev_tri_idx = triangle_idx
                 triangle_idx = triangulation["neighbors"][triangle_idx][best]
-        # might need something to protect against circular loops like a length
-        # check.
 
     # diagonals might not be needed at all, just for debug display
     # obtain only the diagonals via set difference
@@ -288,8 +291,10 @@ def contourcv2_to_tr(contour_idx, contours, heirarchy):
         x, y, w, h = cv2.boundingRect(contours[child_idx])
         holes.append([x + w / 2, y + h / 2])
         child_idx = heirarchy[0][child_idx][0]  # fetch the next child
-
-    return dict(vertices=vertices, segments=segments, holes=holes)
+    # attempt to prevent crashes caused by identical vertices
+    rng = np.random.default_rng(0)
+    jitter = (rng.random(vertices.shape) - 0.5) / 125 # equivalent to +/-1mm
+    return dict(vertices=vertices + jitter, segments=segments, holes=holes)
 
 
 def filter_jagged(centreline: list, angle):
