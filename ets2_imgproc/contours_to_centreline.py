@@ -44,10 +44,6 @@ def contours_to_centreline(contours, heirarchy):
     # convert contour into a format suitable for Triangle package
     contour_tr = contourcv2_to_tr(start_contour_idx, contours, heirarchy)
     triangulation = tr.triangulate(contour_tr, "pne")
-    tri_by_verts = triangulation["vertices"][triangulation["triangles"]]
-    angles = []
-    for triangle in tri_by_verts:
-        angles.append(get_tri_angles_atan2(triangle))
     # centreline via greedy walk through triangles
     headings = [(-90, 20)]  # (heading(deg), length), including initial direction
     triangle_idx = get_containing_triangle(TRUCK_CENTRE, triangulation)
@@ -156,13 +152,15 @@ def get_triangle_normals(idx: int, triangulation: dict) -> list[float, float, fl
 
     Output is in degrees [-180,180], with 0 degrees at x=0, y- axis.
     Edge ordering for a triangle [A,B,C] is [bc, ca, ab]."""
-    # index format seems to always be clockwise
+    # index format is not always clockwise so we need to flip
     #   (in computer graphics coordinate system, x+ right y+ down)
     # using maths coordinate system (x+ right, y+ up) it's anti-clockwise
     vertices = triangulation["vertices"][triangulation["triangles"][idx]]  # [A,B,C]
     vert_rolled = np.roll(vertices, -1, 0)  # [B, C, A]
     vert_rolled2 = np.roll(vertices, 1, 0)  # [C, A, B]
     offsets = vert_rolled2 - vert_rolled  # [bc, ca, ab]
+    if np.cross(*offsets[0:2]) < 0: # flip if anti-clockwise
+        offsets = -offsets
     offsets = np.flipud(np.transpose(offsets))  # reshape for atan2
     normals = np.degrees(np.arctan2(*offsets))
     return normals
@@ -171,7 +169,8 @@ def get_triangle_normals(idx: int, triangulation: dict) -> list[float, float, fl
 def get_tri_angles_atan2(triangle: list[float, float, float]) -> float:
     """Get angle at b using np.atan2
 
-    Output in degrees."""
+    Output in degrees. (basically used to check if a triangle is clockwise
+    or anti-clockwise)"""
     points_rolled = np.roll(triangle, -1, 0)
     points_rolled2 = np.roll(triangle, 1, 0)
     lines = points_rolled2 - points_rolled
