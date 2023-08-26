@@ -14,7 +14,7 @@ from win32gui import (
     GetWindowRect,
 )
 
-from ets2_autopilot.imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
+from ets2_imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
 from ets2_telemetry import TelemetryReader
 from ets2_telemetry.general_info import GeneralInfo
 import ets2_autopilot.calc_input as calc_input

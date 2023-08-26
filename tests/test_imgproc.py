@@ -7,7 +7,7 @@ from sys import platform
 
 import cv2
 
-from imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
+from ets2_imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
 
 FOLDER = r".\tests\data"
 OUTPUT = r".\tests\output"
