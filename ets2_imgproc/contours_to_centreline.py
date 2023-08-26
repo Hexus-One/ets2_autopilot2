@@ -83,8 +83,8 @@ def contours_to_centreline(contours, heirarchy):
             # figure out which side is front/back
             # BUG: something is messing up here
             # are triangle vertices always clockwise?
-            fwd = neighbours[np.argmin(normals[neighbours])]
-            bck = neighbours[np.argmax(normals[neighbours])]
+            fwd = neighbours[np.argmin(np.abs(normals[neighbours]))]
+            bck = neighbours[np.argmax(np.abs(normals[neighbours]))]
             second = get_midpoint(fwd, triangle_idx, triangulation)
             first = get_midpoint(bck, triangle_idx, triangulation)
             centreline = [first, second]
@@ -159,7 +159,7 @@ def get_triangle_normals(idx: int, triangulation: dict) -> list[float, float, fl
     vert_rolled = np.roll(vertices, -1, 0)  # [B, C, A]
     vert_rolled2 = np.roll(vertices, 1, 0)  # [C, A, B]
     offsets = vert_rolled2 - vert_rolled  # [bc, ca, ab]
-    if np.cross(*offsets[0:2]) < 0: # flip if anti-clockwise
+    if np.cross(*offsets[0:2]) < 0:  # flip if anti-clockwise
         offsets = -offsets
     offsets = np.flipud(np.transpose(offsets))  # reshape for atan2
     normals = np.degrees(np.arctan2(*offsets))
