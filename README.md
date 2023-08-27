@@ -97,4 +97,4 @@ For more info see [Development Status](README.md#Development-Status)
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the GNU General Public License version 3.0. For the complete license text, see the file [LICENSE](LICENSE). This license applies to all files in this distribution.
