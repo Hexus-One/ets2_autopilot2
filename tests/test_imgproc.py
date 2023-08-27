@@ -36,5 +36,5 @@ def test_imgproc():
         _, im_out = infer_polyline(cropped)
 
         outname = os.path.join(OUTPUT, filename)
-        cv2.waitKey(1)
         cv2.imwrite(outname, im_out)
+        cv2.waitKey(1)

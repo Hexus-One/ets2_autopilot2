@@ -2,6 +2,8 @@
 # entry point for the program
 
 import ctypes
+from datetime import datetime
+from os.path import join
 from sys import platform
 import time
 
@@ -20,6 +22,8 @@ from ets2_telemetry.general_info import GeneralInfo
 import ets2_autopilot.calc_input as calc_input
 from ets2_autopilot.send_input import send_input
 
+OUTPUT = r"tests\data"
+
 
 def main():
     print("Hello, world!")
@@ -29,6 +33,7 @@ def main():
     if platform == "win32":
         errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
+    global im_src
     telemetry = TelemetryReader()
     general_info = GeneralInfo()
     window_handle = FindWindow(None, "Euro Truck Simulator 2")
@@ -54,7 +59,6 @@ def main():
             # sct.grab is synced to refresh rate,
             # limiting the loop to 60fps or 30fps (if it misses a frame)
             im_src = np.array(sct.grab(ets2_window))
-
             # magic happens here
             centreline, _ = infer_polyline(im_src)
             telemetry.update_telemetry(general_info)
@@ -86,5 +90,9 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception as inst:
-        cv2.waitKey(0)
+    except Exception as inst:  # set a breakpoint here as well
+        print("Program crashed!")
+        name = datetime.now().strftime("crash_%Y-%m-%d_%H-%M-%S.png")
+        name = join(OUTPUT, name)
+        cv2.imwrite(name, im_src)
+        cv2.waitKey(1)

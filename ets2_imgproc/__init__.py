@@ -31,7 +31,7 @@ def infer_polyline(im_src):
     )
     # draw on og HUD
     comb_mask = cv2.cvtColor(comb_mask, cv2.COLOR_GRAY2BGRA)
-    cv2.drawContours(comb_mask, contours, -1, RED, 1)
+    # cv2.drawContours(comb_mask, contours, -1, RED, 1)
 
     # warp contours for transformed perspective
     warped_contours = []
@@ -48,6 +48,8 @@ def infer_polyline(im_src):
     for contour in debug_contours:  # draw contour points
         for [point] in contour:
             cv2.drawMarker(im_out, point, BLUE, cv2.MARKER_TILTED_CROSS, 1)
+    cv2.imshow("Source Image", im_src)
+    cv2.imshow("Mask", comb_mask)
     cv2.imshow("Warped Source Image", im_out)
 
     # magic happens here :)
@@ -72,7 +74,5 @@ def infer_polyline(im_src):
         # 1/4 scale so 1 unit = 1 metre
         centreline = np.multiply(centreline, (-0.25, -0.25))
 
-    cv2.imshow("Source Image", im_src)
-    cv2.imshow("Mask", comb_mask)
     cv2.imshow("Warped Source Image", im_out)
     return centreline, im_out
