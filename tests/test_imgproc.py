@@ -31,10 +31,19 @@ def test_imgproc():
         img = cv2.imread(fullpath)
         if img is None:
             continue
+        # don't crop if already correct size
+        if img.shape[0] == WIN_HEIGHT - CROP_Y:
+            cropped = img
+        else:
+            cropped = img[CROP_Y:WIN_HEIGHT, CROP_X:WIN_WIDTH]
 
-        cropped = img[CROP_Y:WIN_HEIGHT, CROP_X:WIN_WIDTH]
-        _, im_out = infer_polyline(cropped)
-
-        outname = os.path.join(OUTPUT, filename)
-        cv2.imwrite(outname, im_out)
-        cv2.waitKey(1)
+        try:
+            _, im_out = infer_polyline(cropped)
+        except Exception as inst:
+            cv2.waitKey(1)
+            raise inst
+        else:
+            outname = os.path.join(OUTPUT, filename)
+            cv2.imwrite(outname, im_out)
+        finally:
+            cv2.waitKey(1)
