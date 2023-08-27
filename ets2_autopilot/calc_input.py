@@ -129,9 +129,13 @@ class CalcInput:
         """
         return steering, throttle
 
-    def pure_pursuit_control_car(
-        waypoints, look_ahead_distance, axle_to_axle_length
-    ):  # waypoints is what centreline normally is
+    def pure_pursuit_control_car(waypoints, look_ahead_distance, axle_to_axle_length):
+        rear_axle_displacement = 0  # this is the displacmeent of the rear axle from origin. It can be negative
+
+        # Offset waypoints based on rear_axle_displacement
+        waypoints = [(x, y - rear_axle_displacement) for x, y in waypoints]
+
+        # waypoints is what centreline normally is
         # Find the look-ahead point
         min_distance = float("inf")
         look_ahead_x = look_ahead_y = None
@@ -149,7 +153,7 @@ class CalcInput:
         # steering = math.atan2(2 * wheelbase * look_ahead_y_car, look_ahead_distance**2)
         steering_angle = math.atan(
             (abs(look_ahead_x) * 2 * axle_to_axle_length)
-            / (look_ahead_x**2 + look_ahead_y**2 + axle_to_axle_length**2)
+            / (look_ahead_x**2 + look_ahead_y**2)
         )  # generates steering angle in radians
         steer_degrees = math.degrees(steering_angle)
         steering_output = CalcInput.convert_to_steering_output(steering_angle)
