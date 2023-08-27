@@ -39,13 +39,7 @@ def infer_polyline(im_src):
         contourf = contour.astype(np.float32)
         warped_cont = cv2.perspectiveTransform(contourf, HOMOGRAPHY)
         warped_contours.append(warped_cont)
-
-    # magic happens here :)
-    centreline, diagonals = contours_to_centreline(warped_contours, heirarchy)
-
-    # a heap of debug drawing
-    for line in diagonals:
-        cv2.line(im_out, line[0].astype(int), line[1].astype(int), MAGENTA)
+    # some debug drawing before we do centreline calc
     debug_contours = []
     for contour in warped_contours:
         contouri = contour.astype(int)
@@ -54,6 +48,13 @@ def infer_polyline(im_src):
     for contour in debug_contours:  # draw contour points
         for [point] in contour:
             cv2.drawMarker(im_out, point, BLUE, cv2.MARKER_TILTED_CROSS, 1)
+    cv2.imshow("Warped Source Image", im_out)
+
+    # magic happens here :)
+    centreline, diagonals = contours_to_centreline(warped_contours, heirarchy)
+    # a heap of debug drawing
+    for line in diagonals:
+        cv2.line(im_out, line[0].astype(int), line[1].astype(int), BLUE)
     # no clue why this conversion is needed but yeah
     # taken from https://www.geeksforgeeks.org/python-opencv-cv2-polylines-method/
     centreline_np = np.array(centreline, np.int32)

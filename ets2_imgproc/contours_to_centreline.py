@@ -293,7 +293,7 @@ def contourcv2_to_tr(contour_idx, contours, heirarchy):
         child_idx = heirarchy[0][child_idx][0]  # fetch the next child
     # attempt to prevent crashes caused by identical vertices
     rng = np.random.default_rng(0)
-    jitter = (rng.random(vertices.shape) - 0.5) / 125 # equivalent to +/-1mm
+    jitter = (rng.random(vertices.shape) - 0.5) / 125  # equivalent to +/-1mm
     return dict(vertices=vertices + jitter, segments=segments, holes=holes)
 
 

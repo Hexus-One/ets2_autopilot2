@@ -21,7 +21,7 @@ import ets2_autopilot.calc_input as calc_input
 from ets2_autopilot.send_input import send_input
 
 
-if __name__ == "__main__":
+def main():
     print("Hello, world!")
     # DPI Scaling workaround from
     # https://stackoverflow.com/questions/44398075/can-dpi-scaling-be-enabled-disabled-programmatically-on-a-per-session-basis
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     window_handle = FindWindow(None, "Euro Truck Simulator 2")
 
     with mss.mss() as sct:
-        last_time = time.time()
+        last_time = time.perf_counter_ns()
         while True:
             # grab window position
             # assuming you're using Win10 + ETS2 in 1920x1080 window
@@ -59,7 +59,7 @@ if __name__ == "__main__":
             centreline, _ = infer_polyline(im_src)
             telemetry.update_telemetry(general_info)
             if len(centreline) > 0:
-                dt = time.time() - last_time
+                dt = time.perf_counter_ns() - last_time
                 steering = calc_input.CalcInput.pure_pursuit_control_car(
                     centreline, 10, 3.85289538  # magic wheelbase
                 )
@@ -70,13 +70,21 @@ if __name__ == "__main__":
                     and general_info.paused == False
                 ):
                     send_input(telemetry, steering, 0)
-            elapsed = time.time() - last_time
+                    pass
+            elapsed = (time.perf_counter_ns() - last_time) / 1_000_000_000
             fps = 1 / elapsed
             print(f"FPS: {round(fps, 2):06.2f}" + "-" * round(fps / 10))
-            last_time = time.time()
+            last_time = time.perf_counter_ns()
             # Press "q" to quit
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 cv2.destroyAllWindows()
                 break
     # end of loop
     print("Exiting...")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as inst:
+        cv2.waitKey(0)
