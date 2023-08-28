@@ -91,8 +91,8 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as inst:  # set a breakpoint here as well
-        print("Program crashed!")
+        cv2.waitKey(1)
         name = datetime.now().strftime("crash_%Y-%m-%d_%H-%M-%S.png")
         name = join(OUTPUT, name)
         cv2.imwrite(name, im_src)
-        cv2.waitKey(1)
+        print("Program crashed!")
