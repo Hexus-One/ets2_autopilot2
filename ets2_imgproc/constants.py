@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 # hardcoded colours for drawing
+BLACK = (0, 0, 0)
 RED = (0, 0, 255)
 BLUE = (255, 0, 0)
 DARK_GREEN = (0, 127, 0)

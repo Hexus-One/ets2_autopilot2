@@ -30,7 +30,7 @@ def infer_polyline(im_src):
         comb_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_TC89_KCOS
     )
     # draw on og HUD
-    comb_mask = cv2.cvtColor(comb_mask, cv2.COLOR_GRAY2BGRA)
+    comb_mask = cv2.cvtColor(comb_mask, cv2.COLOR_GRAY2BGR)
     # cv2.drawContours(comb_mask, contours, -1, RED, 1)
 
     # warp contours for transformed perspective
@@ -51,6 +51,9 @@ def infer_polyline(im_src):
     cv2.imshow("Source Image", im_src)
     cv2.imshow("Mask", comb_mask)
     cv2.imshow("Warped Source Image", im_out)
+    # early exit if truck isn't on a route
+    if (comb_mask[-211, -231] == BLACK).all():
+        return [], im_out
 
     # magic happens here :)
     centreline, diagonals = contours_to_centreline(warped_contours, heirarchy)
