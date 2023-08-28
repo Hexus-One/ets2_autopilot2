@@ -69,7 +69,7 @@ if __name__ == "__main__":
                     GetForegroundWindow() == window_handle
                     and all_values.general_info.paused == False
                 ):
-                    send_input(telemetry, steering, 0)
+                    send_input(all_values, steering, 0)
             elapsed = time.time() - last_time
             fps = 1 / elapsed
             print(f"FPS: {round(fps, 2)}" + "-" * round(fps / 10))
