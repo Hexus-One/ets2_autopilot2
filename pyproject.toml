@@ -3,7 +3,7 @@ name = "ets2-autopilot2"
 version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
-license = "MIT"
+license = "GPL-3.0-only"
 readme = "README.md"
 packages = [{include = "ets2_autopilot2"}]
 
