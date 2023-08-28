@@ -65,7 +65,7 @@ def main():
             if len(centreline) > 0:
                 dt = time.perf_counter_ns() - last_time
                 steering = calc_input.CalcInput.pure_pursuit_control_car(
-                    centreline, 10, 3.85289538  # magic wheelbase
+                    all_values, centreline, 10
                 )
                 # only send input if ETS2 is in focus and unpaused
                 # TODO: need to figure out some toggle to enable/disable input
