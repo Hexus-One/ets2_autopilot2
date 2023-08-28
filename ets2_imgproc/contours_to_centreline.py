@@ -29,10 +29,13 @@ def contours_to_centreline(contours, heirarchy):
     # 1. find containing contour
     start_contour_idx = None
     start_contour = None
+    contours_found = 0
     for idx, contour in enumerate(contours):
         if cv2.pointPolygonTest(contour, TRUCK_CENTRE, measureDist=False) in (1, 0):
             start_contour_idx, start_contour = idx, contour
-            break
+            contours_found += 1
+        if contours_found == 2:  # implies we're inside a "hole", exit early
+            return centreline, diagonals
     # check contour thickness (area:perimeter ratio) to determine if we're at
     # the correct map zoom.
     # for 1920x1080 window, thickness is ~20 zoomed in and ~10 zoomed out

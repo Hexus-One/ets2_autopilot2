@@ -51,9 +51,6 @@ def infer_polyline(im_src):
     cv2.imshow("Source Image", im_src)
     cv2.imshow("Mask", comb_mask)
     cv2.imshow("Warped Source Image", im_out)
-    # early exit if truck isn't on a route
-    if (comb_mask[-211, -231] == BLACK).all():
-        return [], im_out
 
     # magic happens here :)
     centreline, diagonals = contours_to_centreline(warped_contours, heirarchy)
