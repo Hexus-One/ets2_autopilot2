@@ -18,7 +18,7 @@ from win32gui import (
 
 from ets2_imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
 from ets2_telemetry import TelemetryReader
-from ets2_telemetry.general_info import GeneralInfo
+from ets2_telemetry.all_values import AllValues
 import ets2_autopilot.calc_input as calc_input
 from ets2_autopilot.send_input import send_input
 
@@ -35,7 +35,7 @@ def main():
 
     global im_src
     telemetry = TelemetryReader()
-    general_info = GeneralInfo()
+    all_values = AllValues()
     window_handle = FindWindow(None, "Euro Truck Simulator 2")
 
     with mss.mss() as sct:
@@ -61,7 +61,7 @@ def main():
             im_src = np.array(sct.grab(ets2_window))
             # magic happens here
             centreline, _ = infer_polyline(im_src)
-            telemetry.update_telemetry(general_info)
+            telemetry.update_telemetry(all_values)
             if len(centreline) > 0:
                 dt = time.perf_counter_ns() - last_time
                 steering = calc_input.CalcInput.pure_pursuit_control_car(
@@ -71,10 +71,9 @@ def main():
                 # TODO: need to figure out some toggle to enable/disable input
                 if (
                     GetForegroundWindow() == window_handle
-                    and general_info.paused == False
+                    and all_values.general_info.paused == False
                 ):
-                    send_input(telemetry, steering, 0)
-                    pass
+                    send_input(all_values, steering, 0)
             elapsed = (time.perf_counter_ns() - last_time) / 1_000_000_000
             fps = 1 / elapsed
             print(f"FPS: {round(fps, 2):06.2f}" + "-" * round(fps / 10))

@@ -15,7 +15,7 @@ class PhysicsValues(AbstractDataClass):
         linear_velocity_y = struct.unpack("f", memory_map[1872:1876])[0]
         linear_velocity_z = struct.unpack("f", memory_map[1876:1880])[0]
 
-        self.linear_velocity[linear_velocity_x, linear_velocity_y, linear_velocity_z]
+        self.linear_velocity = [linear_velocity_x, linear_velocity_y, linear_velocity_z]
 
         angular_velocity_x = struct.unpack("f", memory_map[1880:1884])[0]
         angular_velocity_y = struct.unpack("f", memory_map[1884:1888])[0]
