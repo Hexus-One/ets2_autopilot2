@@ -1,4 +1,5 @@
 import math
+import numpy as np
 
 from ets2_telemetry.all_values import AllValues
 
@@ -217,4 +218,32 @@ class CalcInput:
                 if before_severe and after_severe:
                     return True
 
+        return False
+    
+    def calculate_angle(x1, y1, x2, y2):
+        return np.degrees(np.arctan2(y2 - y1, x2 - x1)) % 360
+    
+    def detect_90_degree_turns(waypoints):
+        n = len(waypoints)
+        
+        # Check if there are enough points to form a 6-point window
+        if n < 6:
+            return False
+
+        # 6-point sliding window
+        for i in range(n - 6 + 1):
+            window = waypoints[i:i+6]
+            
+            # Calculate the angles for the first 3 and last 3 point pairs
+            first_3_angles = [CalcInput.calculate_angle(window[j][0], window[j][1], window[j+1][0], window[j+1][1]) for j in range(3)]
+            last_3_angles = [CalcInput.calculate_angle(window[j][0], window[j][1], window[j+1][0], window[j+1][1]) for j in range(3, 5)]
+            
+            # Calculate average angles
+            avg_first_3 = np.mean(first_3_angles)
+            avg_last_3 = np.mean(last_3_angles)
+            
+            # Check if the angle difference is close to 90 degrees
+            if abs(avg_last_3 - avg_first_3 - 90) < 5:
+                return True
+                
         return False
