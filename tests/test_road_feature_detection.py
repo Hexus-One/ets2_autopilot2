@@ -1,5 +1,8 @@
-# test_imgproc.py
-# run imgproc on test files and preview output
+"""
+Test road feature detection.
+
+This file is kinda ugly...
+"""
 
 import ctypes
 import os
@@ -11,7 +14,12 @@ from .constants import *
 from ets2_imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
 
 
-def test_imgproc():
+def do_things_with_centreline(centreline) -> None:
+    # Put your road feature detections here.
+    pass
+
+
+def test_road_feature_detection():
     if platform == "win32":
         errorCode = ctypes.windll.shcore.SetProcessDpiAwareness(2)
 
@@ -38,12 +46,14 @@ def test_imgproc():
             cropped = img[CROP_Y:WIN_HEIGHT, CROP_X:WIN_WIDTH]
 
         try:
-            _, im_out = infer_polyline(cropped)
+            centreline, im_out = infer_polyline(cropped)
         except Exception as inst:
             cv2.waitKey(1)
             raise inst
         else:
             outname = os.path.join(OUTPUT, filename)
             cv2.imwrite(outname, im_out)
+            do_things_with_centreline(centreline)
         finally:
             cv2.waitKey(1)
+
