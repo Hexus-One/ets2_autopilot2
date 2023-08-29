@@ -1,6 +1,15 @@
 {
+    "python.analysis.typeCheckingMode": "off",
+    "editor.rulers": [
+        79
+    ],
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
     "[python]": {
         "editor.defaultFormatter": "ms-python.python"
     },
-    "python.formatting.provider": "none"
+    "python.formatting.provider": "none",
 }

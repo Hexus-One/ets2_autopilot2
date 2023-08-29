@@ -1,6 +1,8 @@
 import math
 import numpy as np
 
+from ets2_telemetry.all_values import AllValues
+
 
 class CalcInput:
     def __init__(
@@ -130,11 +132,18 @@ class CalcInput:
         """
         return steering, throttle
 
-    def pure_pursuit_control_car(waypoints, look_ahead_distance, axle_to_axle_length):
-        rear_axle_displacement = 0  # this is the displacmeent of the rear axle from origin. It can be negative
+    def pure_pursuit_control_car(telemetry: AllValues, waypoints, look_ahead_distance):
+        # note: telemetry Z values are -forwards, +backwards
+        wheel_pos_z = telemetry.truck_values.wheelPositionZ
+        # wheels are in pairs- [0..1] is front axle, [2..3] is rear axle
+        # this is the displacement of the rear axle from origin. It can be negative.
+        rear_axle_displacement = wheel_pos_z[2]
+        # assuming the truck has 4 wheels - may need to do more complicated-
+        # maths if the truck has 6 or more wheels (or multiple steering sets)
+        axle_to_axle_length = wheel_pos_z[2] - wheel_pos_z[0]
 
         # Offset waypoints based on rear_axle_displacement
-        waypoints = [(x, y - rear_axle_displacement) for x, y in waypoints]
+        waypoints = [(x, y + rear_axle_displacement) for x, y in waypoints]
 
         # waypoints is what centreline normally is
         # Find the look-ahead point

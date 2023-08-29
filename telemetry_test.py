@@ -1,1 +1,0 @@
-import ets2_telemetry

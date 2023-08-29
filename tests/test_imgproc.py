@@ -7,7 +7,7 @@ from sys import platform
 
 import cv2
 
-from imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
+from ets2_imgproc import infer_polyline, CROP_X, CROP_Y, WIN_HEIGHT, WIN_WIDTH
 
 FOLDER = r".\tests\data"
 OUTPUT = r".\tests\output"
@@ -31,9 +31,19 @@ def test_imgproc():
         img = cv2.imread(fullpath)
         if img is None:
             continue
+        # don't crop if already correct size
+        if img.shape[0] == WIN_HEIGHT - CROP_Y:
+            cropped = img
+        else:
+            cropped = img[CROP_Y:WIN_HEIGHT, CROP_X:WIN_WIDTH]
 
-        cropped = img[CROP_Y:WIN_HEIGHT, CROP_X:WIN_WIDTH]
-        _, im_out = infer_polyline(cropped)
-
-        outname = os.path.join(OUTPUT, filename)
-        cv2.imwrite(outname, im_out)
+        try:
+            _, im_out = infer_polyline(cropped)
+        except Exception as inst:
+            cv2.waitKey(1)
+            raise inst
+        else:
+            outname = os.path.join(OUTPUT, filename)
+            cv2.imwrite(outname, im_out)
+        finally:
+            cv2.waitKey(1)
