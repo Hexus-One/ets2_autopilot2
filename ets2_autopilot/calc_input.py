@@ -235,8 +235,8 @@ class CalcInput:
             window = waypoints[i:i+6]
             
             # Calculate the angles for the first 3 and last 3 point pairs
-            first_3_angles = [calculate_angle(window[j][0], window[j][1], window[j+1][0], window[j+1][1]) for j in range(3)]
-            last_3_angles = [calculate_angle(window[j][0], window[j][1], window[j+1][0], window[j+1][1]) for j in range(3, 5)]
+            first_3_angles = [CalcInput.calculate_angle(window[j][0], window[j][1], window[j+1][0], window[j+1][1]) for j in range(3)]
+            last_3_angles = [CalcInput.calculate_angle(window[j][0], window[j][1], window[j+1][0], window[j+1][1]) for j in range(3, 5)]
             
             # Calculate average angles
             avg_first_3 = np.mean(first_3_angles)
