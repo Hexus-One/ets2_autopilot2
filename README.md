@@ -6,6 +6,8 @@ A program to automate driving in SCS Software's Euro Truck Simulator 2.
 
 This mainly relies on the HUD GPS with an active route to determine the road ahead, to save effort and computation that's normally required to infer the lanes from the main view. This also allows the program to negogiate more complex situations like turns and intersections, with the goal to navigate from end-to-end with no interventions.
 
+[Youtube Demo](https://youtu.be/K0jiwS_8JF0?si=dHHHVFtfKMQpnHak)
+
 ## Development Status
 
 - [x] obtain a mask/outline of the route from the GPS
